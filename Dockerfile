@@ -44,9 +44,14 @@ COPY scripts ./scripts
 # Install Python dependencies and the package
 RUN pip install -e .
 
+# Set Playwright browsers path to a location accessible by all users
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
 # Install Playwright and Chromium browser
-RUN playwright install chromium && \
-    playwright install-deps chromium
+RUN mkdir -p /ms-playwright && \
+    playwright install chromium && \
+    playwright install-deps chromium && \
+    chmod -R 777 /ms-playwright
 
 # Create non-root user for security
 RUN useradd -m -u 1000 jobly && \

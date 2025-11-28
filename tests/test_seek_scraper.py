@@ -3,6 +3,7 @@
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
 from jobly.scrapers.seek_scraper import SeekScraper
 
 
@@ -25,6 +26,7 @@ def sample_job_html():
             <span data-automation="advertiser-name">Tech Company Pty Ltd</span>
             <span data-automation="job-detail-location">Sydney NSW</span>
             <span data-automation="job-detail-salary">$120,000 - $150,000 per year</span>
+            <span class="_2953uf0 _1cvgfrq50 eytv690 eytv691 eytv691u eytv696 _1lwlriv4">Posted 2d ago</span>
             <div data-automation="jobAdDetails">
                 <h2>About the Role</h2>
                 <p>We are looking for an experienced Python developer to join our team.</p>
@@ -103,6 +105,20 @@ class TestSeekScraper:
         result = seek_scraper._determine_seniority(title)
         assert result == expected_seniority
 
+    @pytest.mark.parametrize("text,days_ago", [
+        ("Posted 2d ago", 2),
+        ("Posted 5d ago", 5),
+        ("Posted 30+d ago", 30),
+        ("Posted 5h ago", 0),
+        ("Posted 30m ago", 0),
+        ("Just now", 0),
+    ])
+    def test_calculate_posted_date(self, seek_scraper, text, days_ago):
+        """Test date calculation from posted text."""
+        expected_date = (datetime.now() - timedelta(days=days_ago)).strftime("%Y-%m-%d")
+        result = seek_scraper._calculate_posted_date(text)
+        assert result == expected_date
+
     @pytest.mark.asyncio
     async def test_get_job_links_success(self, seek_scraper, sample_listing_html):
         """Test extracting job links from listing page."""
@@ -169,6 +185,9 @@ class TestSeekScraper:
         assert job_data["salary"] == "$120,000 - $150,000 per year"
         assert job_data["seniority"] == "Senior"
         assert job_data["platforms"] == ["seek"]
+        # Should be 2 days ago
+        expected_date = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
+        assert job_data["posted_at"] == expected_date
         assert job_data["llm_analysis"] is None
         assert "Python developer" in job_data["description"]
 
@@ -233,6 +252,7 @@ async def test_extract_all_fields_demonstration(seek_scraper, sample_job_html):
     print(f"🔗 Source URLs: {', '.join(job_data['source_urls'])}")
     print(f"💰 Salary: {job_data['salary']}")
     print(f"👔 Seniority: {job_data['seniority']}")
+    print(f"🕒 Posted At: {job_data['posted_at']}")
     print(f"🌐 Platforms: {', '.join(job_data['platforms'])}")
     print(f"🤖 LLM Analysis: {job_data['llm_analysis']}")
     print(f"\n📄 Description (first 200 chars):\n{job_data['description'][:200]}...")
@@ -243,7 +263,7 @@ async def test_extract_all_fields_demonstration(seek_scraper, sample_job_html):
     # Verify all expected fields are present
     expected_fields = [
         "job_title", "company", "locations", "source_urls",
-        "description", "salary", "seniority", "llm_analysis", "platforms"
+        "description", "salary", "seniority", "llm_analysis", "platforms", "posted_at"
     ]
     
     for field in expected_fields:

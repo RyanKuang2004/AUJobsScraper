@@ -29,19 +29,21 @@ class ScraperSettings(BaseSettings):
     
     search_keywords: List[str] = Field(
         default=[
-            "machine learning",
-            "data science",
-            "artificial intelligence",
-            "software developer"
+            "software engineer",
+            "software developer",
+            "data scientist",
+            "machine learning engineer",
+            "ai engineer",
+            "data engineer"
         ],
         description="Job search keywords"
     )
     max_pages: int = Field(
-        default=5,
+        default=20,
         description="Maximum pages to scrape per keyword"
     )
     days_from_posted: int = Field(
-        default=7,
+        default=2,
         description="Number of days back to search for jobs"
     )
     initial_days_from_posted: int = Field(
@@ -49,6 +51,11 @@ class ScraperSettings(BaseSettings):
         description="Number of days back for initial scrape"
     )
     
+    initial_run: bool = Field(
+        default=True,
+        description="Initial run flag"
+    )
+
     model_config = SettingsConfigDict(env_prefix="SCRAPER_")
 
 

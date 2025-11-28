@@ -4,7 +4,7 @@ import random
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
 from jobly.scrapers.base_scraper import BaseScraper
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from jobly.config import settings
 
@@ -42,7 +42,9 @@ class SeekScraper(BaseScraper):
                             break
                         
                         # Deduplication: Check which URLs already exist
-                        existing_urls = self.db.check_existing_urls(job_links)
+                        # If initial_run is True, we only consider "complete" jobs (with posted_at) as existing.
+                        # This allows us to re-scrape jobs that have null posted_at.
+                        existing_urls = self.db.check_existing_urls(job_links, only_complete=initial_run)
                         new_links = [link for link in job_links if link not in existing_urls]
                         
                         skipped_count = len(job_links) - len(new_links)
@@ -108,7 +110,32 @@ class SeekScraper(BaseScraper):
             return "Junior"
         elif "intermediate" in text or "mid" in text:
             return "Intermediate"
+        elif "intermediate" in text or "mid" in text:
+            return "Intermediate"
         return "N/A" 
+
+    def _calculate_posted_date(self, text: str) -> str:
+        """
+        Calculates the date based on 'Posted Xd ago' text.
+        """
+        try:
+            # Clean text: "Posted 2d ago" -> "2d"
+            clean_text = text.replace("Posted", "").replace("ago", "").strip().lower()
+            
+            days_ago = 0
+            if "d" in clean_text:
+                # Handle "30+d" case
+                clean_text = clean_text.replace("+", "")
+                days_ago = int(clean_text.replace("d", ""))
+            elif "h" in clean_text or "m" in clean_text:
+                # Hours or minutes ago = today
+                days_ago = 0
+                
+            posted_date = datetime.now() - timedelta(days=days_ago)
+            return posted_date.strftime("%Y-%m-%d")
+        except Exception as e:
+            self.logger.warning(f"Could not parse date from '{text}': {e}")
+            return datetime.now().strftime("%Y-%m-%d") 
 
     async def _process_job(self, page, job_url: str):
         """
@@ -145,6 +172,15 @@ class SeekScraper(BaseScraper):
 
             # Extract seniority level (Junior, Senior, Intermediate)
             seniority = self._determine_seniority(title)
+
+            # Extract posted_at
+            posted_at = None
+            meta_elements = job_soup.find_all("span", class_="_2953uf0 _1cvgfrq50 eytv690 eytv691 eytv691u eytv696 _1lwlriv4")
+            for elem in meta_elements:
+                if "Posted" in elem.text:
+                    raw_text = elem.text.strip()
+                    posted_at = self._calculate_posted_date(raw_text)
+                    break
             
             self.logger.info(f"Extracted: {title} at {company}")
 
@@ -161,18 +197,21 @@ class SeekScraper(BaseScraper):
                 "seniority": seniority,
                 "llm_analysis": llm_analysis,
                 "platforms": ["seek"],
+                "posted_at": posted_at,
             }
             
             saved_job = self.save_job(job_data)
             if saved_job:
                 self.logger.info(f"Saved job: {title}")
+
+            return job_data
             
         except Exception as e:
             self.logger.error(f"Error scraping job details {job_url}: {e}")
 
-    def run(self):
+    def run(self, initial_run: bool = False):
         # Default run with config values
-        asyncio.run(self.scrape())
+        asyncio.run(self.scrape(initial_run=initial_run))
 
 if __name__ == "__main__":
     scraper = SeekScraper()

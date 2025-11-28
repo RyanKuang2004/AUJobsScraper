@@ -64,7 +64,8 @@ class JobDatabase(BaseDatabase):
                 # Update other fields if the new one is "fresher" or just overwrite
                 "description": job_data.get("description", record.get("description")),
                 "salary": job_data.get("salary", record.get("salary")),
-                "seniority": job_data.get("seniority", record.get("seniority"))
+                "seniority": job_data.get("seniority", record.get("seniority")),
+                "posted_at": job_data.get("posted_at", record.get("posted_at"))
             }
             
             response = self.supabase.table("job_postings").update(update_payload).eq("id", record_id).execute()
@@ -83,7 +84,8 @@ class JobDatabase(BaseDatabase):
                 "description": job_data.get("description"),
                 "salary": job_data.get("salary"),
                 "seniority": job_data.get("seniority"),
-                "llm_analysis": job_data.get("llm_analysis")
+                "llm_analysis": job_data.get("llm_analysis"),
+                "posted_at": job_data.get("posted_at")
             }
             
             response = self.supabase.table("job_postings").insert(insert_payload).execute()
@@ -96,9 +98,10 @@ class JobDatabase(BaseDatabase):
         response = self.supabase.table("job_postings").select("*").eq("fingerprint", fp).execute()
         return response.data[0] if response.data else None
 
-    def check_existing_urls(self, urls: List[str]) -> List[str]:
+    def check_existing_urls(self, urls: List[str], only_complete: bool = False) -> List[str]:
         """
         Checks a list of URLs and returns the ones that ALREADY exist in the database.
+        If only_complete is True, only returns URLs for jobs that have a non-null posted_at.
         """
         if not urls:
             return []
@@ -118,10 +121,18 @@ class JobDatabase(BaseDatabase):
             # Format for Postgres array literal: {url1,url2}
             # But the python client might handle list conversion.
             
-            response = self.supabase.table("job_postings") \
+            query = self.supabase.table("job_postings") \
                 .select("source_urls") \
-                .ov("source_urls", urls) \
-                .execute()
+                .ov("source_urls", urls)
+            
+            if only_complete:
+                # If we only want "complete" jobs (i.e. those with posted_at),
+                # then we filter for posted_at NOT being null.
+                # If a job has posted_at as NULL, it won't be returned here,
+                # so it won't be in 'existing_urls', so the scraper will treat it as new.
+                query = query.neq("posted_at", "null")
+                
+            response = query.execute()
                 
             existing_urls = set()
             if response.data:

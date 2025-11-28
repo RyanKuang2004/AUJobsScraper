@@ -8,6 +8,7 @@ import logging
 import sys
 
 from jobly.scrapers import SeekScraper
+from jobly.config import settings   
 
 # Configure logging
 logging.basicConfig(
@@ -24,7 +25,7 @@ def main():
     try:
         logger.info("Running Seek Scraper...")
         scraper = SeekScraper()
-        scraper.run()
+        scraper.run(initial_run=settings.scraper.initial_run)
         logger.info("Scraper completed successfully")
         return 0
         
