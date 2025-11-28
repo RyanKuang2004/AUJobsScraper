@@ -106,6 +106,74 @@ python scripts/scheduler.py
 
 Set `RUN_ON_STARTUP=true` in your environment to run immediately on start.
 
+## Docker Deployment
+
+Run both the scraper and processor simultaneously using Docker Compose.
+
+### Prerequisites
+
+- Docker and Docker Compose installed
+- `.env` file configured (same variables as above)
+
+### Build and Run
+
+**Build the Docker image**:
+```bash
+docker-compose build
+```
+
+**Run both services** (scraper + processor concurrently):
+```bash
+docker-compose up
+```
+
+**Run in detached mode** (background):
+```bash
+docker-compose up -d
+```
+
+### Managing Services
+
+**View logs**:
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f scraper
+docker-compose logs -f processor
+```
+
+**Stop services**:
+```bash
+docker-compose down
+```
+
+**Restart services**:
+```bash
+docker-compose restart
+```
+
+**Run individual service**:
+```bash
+# Run only the scraper
+docker-compose up scraper
+
+# Run only the processor
+docker-compose up processor
+```
+
+### Resource Management
+
+The `docker-compose.yml` includes commented resource limits. Uncomment to restrict CPU/memory usage:
+```yaml
+deploy:
+  resources:
+    limits:
+      cpus: '0.5'
+      memory: 512M
+```
+
 ## Configuration
 
 Configuration is managed via Pydantic Settings in `jobly/config.py`. You can override defaults using environment variables:

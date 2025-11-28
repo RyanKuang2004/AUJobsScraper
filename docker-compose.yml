@@ -1,0 +1,44 @@
+services:
+  # Job scraper service - collects job postings from Seek
+  scraper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jobly-scraper
+    command: python scripts/run_scraper.py
+    env_file:
+      - .env
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Uncomment to limit resources if needed
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '0.5'
+    #       memory: 512M
+
+  # Job processor service - analyzes unanalyzed jobs with LLM
+  processor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jobly-processor
+    command: python scripts/run_processor.py
+    env_file:
+      - .env
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Uncomment to limit resources if needed
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1.0'
+    #       memory: 1G
