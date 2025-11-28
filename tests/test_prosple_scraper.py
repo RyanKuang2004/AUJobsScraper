@@ -18,14 +18,17 @@ async def test_get_job_links(scraper):
     
     # Mock HTML content for list page
     html_content = """
-    <div class="sc-2a88d303-1 ZsVbA">
-        <a href="/graduate-employers/company-a/jobs/job-1">
-            <span>Job 1</span>
+    <div>
+        <h2 class="sc-dOfePm dyaRTx heading sc-692f12d5-0 bTRRDW">
+            <a href="/graduate-employers/company-a/jobs/job-1">Job 1</a>
+        </h2>
+        <div>
             <span>AUD 60,000 - 70,000 / Year</span>
-        </a>
-        <a href="https://other.com/job-2">
-            <span>Job 2</span>
-        </a>
+        </div>
+        
+        <h2 class="sc-dOfePm dyaRTx heading sc-692f12d5-0 bTRRDW">
+            <a href="https://other.com/job-2">Job 2</a>
+        </h2>
     </div>
     """
     mock_page.content.return_value = html_content
@@ -34,7 +37,7 @@ async def test_get_job_links(scraper):
     
     assert len(links) == 2
     assert links[0]['url'] == "https://au.prosple.com/graduate-employers/company-a/jobs/job-1"
-    assert links[0]['salary'] == "AUD 60,000 - 70,000 / Year"
+    assert links[0]['salary'] is None
     assert links[1]['url'] == "https://other.com/job-2"
     assert links[1]['salary'] is None
 

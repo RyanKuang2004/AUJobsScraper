@@ -3,6 +3,8 @@ import random
 from typing import List, Dict, Any
 from playwright.async_api import async_playwright, Page
 from bs4 import BeautifulSoup
+import json
+import re
 from jobly.scrapers.base_scraper import BaseScraper
 from jobly.config import settings
 
@@ -69,35 +71,31 @@ class ProspleScraper(BaseScraper):
             soup = BeautifulSoup(content, 'lxml')
             
             # The container for results
-            results_container = soup.find("div", class_="sc-2a88d303-1 ZsVbA")
-            if not results_container:
+            # Based on user request, we look for h2 with specific class
+            # class="sc-dOfePm dyaRTx heading sc-692f12d5-0 bTRRDW"
+            job_cards = soup.find_all("h2", class_="sc-dOfePm dyaRTx heading sc-692f12d5-0 bTRRDW")
+            
+            if not job_cards:
                 # Check if we are just out of results (page might be empty or have different structure)
                 if "No matching search results" in content:
                     return []
                 # If container not found but page loaded, maybe selector changed or empty
                 return []
 
-            job_cards = results_container.find_all("a", href=True)
-            
             jobs_data = []
-            for card in job_cards:
-                link = card['href']
+            for card_h2 in job_cards:
+                link_elem = card_h2.find("a", href=True)
+                if not link_elem:
+                    continue
+
+                link = link_elem['href']
                 if not link.startswith("http"):
-                    link = self.base_url + link.split("?")[0]
+                    # Ensure we don't double slash if base_url ends with / and link starts with /
+                    base = self.base_url.rstrip('/')
+                    path = link.lstrip('/')
+                    link = f"{base}/{path}"
                 
-                # Extract salary from card
-                salary = None
-                card_text = card.get_text(separator="\n", strip=True)
-                lines = card_text.split("\n")
-                for line in lines:
-                    if "AUD" in line or "/ Year" in line or "/ Hour" in line:
-                        salary = line.strip()
-                        break
-                
-                jobs_data.append({
-                    "url": link,
-                    "salary": salary
-                })
+                jobs_data.append(link)
             
             return jobs_data
 
@@ -105,59 +103,139 @@ class ProspleScraper(BaseScraper):
             self.logger.error(f"Error getting job links from {url}: {e}")
             return []
 
-    async def _process_job(self, page: Page, job_info: Dict[str, Any]):
-        job_url = job_info['url']
-        salary = job_info['salary']
+    async def _process_job(self, page: Page, job_data: Dict[str, Any]):
+        job_url = job_data['url'] if isinstance(job_data, dict) else job_data
         
         try:
             self.logger.info(f"Scraping Job: {job_url}")
             await page.goto(job_url, wait_until="domcontentloaded")
             await asyncio.sleep(random.uniform(1, 3))
             
+            # Get full HTML including dynamically loaded content if any
+            # But for JSON-LD, domcontentloaded might be enough. 
+            # Sometimes JSON-LD is injected by JS, so we might want to wait a bit or check content.
             content = await page.content()
             soup = BeautifulSoup(content, 'lxml')
             
-            # Title
-            title_elem = soup.find("h1")
-            title = title_elem.text.strip() if title_elem else "Unknown Title"
-            
-            # Company
-            # Look for a link to graduate-employers which usually contains the company name
+            # Initialize fields
+            title = "Unknown Title"
             company = "Unknown Company"
-            company_elem = soup.find("a", href=lambda x: x and "/graduate-employers/" in x)
-            if company_elem:
-                company = company_elem.text.strip()
-            else:
-                # Fallback: try to find it in text if not a link
-                # This is a bit loose, but better than nothing.
-                pass
-            
-            # Location
             location = "Australia"
-            # Try to find text that looks like a location or is near "Location" label
-            # Often in header metadata
-            # We can search for common Australian cities in the text as a heuristic if specific selector fails
-            # But let's try to grab the header text
-            header_elem = soup.find("header")
-            if header_elem:
-                header_text = header_elem.get_text()
-                # Very basic extraction, maybe improve later if specific selector found
-            
-            # Description
-            # Combine text from the main content area
-            # We'll grab the main container. 
-            # Based on common structure, it might be 'main' or a specific div.
             description = ""
-            main_content = soup.find("main")
-            if main_content:
-                description = self._remove_html_tags(str(main_content))
-            else:
-                description = self._remove_html_tags(str(soup.body))
+            salary = None
+            posted_at = None
+            application_deadline = None
+            work_type = None
+
+            # 1. Try JSON-LD Extraction
+            json_ld_scripts = soup.find_all('script', type='application/ld+json')
+            json_data = None
+            
+            for script in json_ld_scripts:
+                try:
+                    data = json.loads(script.string)
+                    if isinstance(data, dict) and data.get('@type') == 'JobPosting':
+                        json_data = data
+                        break
+                    elif isinstance(data, list):
+                        for item in data:
+                            if isinstance(item, dict) and item.get('@type') == 'JobPosting':
+                                json_data = item
+                                break
+                except (json.JSONDecodeError, AttributeError):
+                    continue
+            
+            if json_data:
+                self.logger.info("Found JSON-LD JobPosting data")
+                title = json_data.get('title', title)
+                
+                hiring_org = json_data.get('hiringOrganization')
+                if isinstance(hiring_org, dict):
+                    company = hiring_org.get('name', company)
+                elif isinstance(hiring_org, str):
+                    company = hiring_org
+                
+                job_loc = json_data.get('jobLocation')
+                if isinstance(job_loc, list) and len(job_loc) > 0:
+                    job_loc = job_loc[0]
+                
+                if isinstance(job_loc, dict):
+                    address = job_loc.get('address')
+                    if isinstance(address, dict):
+                        location = address.get('addressLocality', location)
+                
+                description_html = json_data.get('description', "")
+                description = self._remove_html_tags(description_html)
+                
+                posted_at = json_data.get('datePosted')
+                application_deadline = json_data.get('validThrough')
+                
+                emp_type = json_data.get('employmentType')
+                if isinstance(emp_type, list):
+                    work_type = ", ".join(emp_type)
+                else:
+                    work_type = emp_type
+
+            # 2. Fallback / Supplement with HTML Scraping
+            
+            # Title fallback / refinement (H1 often has more detail like "Start ASAP")
+            if title == "Unknown Title" or True: # Always check H1 as it might be better formatted
+                h1_elem = soup.find("h1")
+                if h1_elem:
+                    h1_text = h1_elem.text.strip()
+                    if h1_text:
+                        title = h1_text
+
+            # Company fallback
+            if company == "Unknown Company":
+                company_elem = soup.find("a", href=lambda x: x and "/graduate-employers/" in x)
+                if company_elem:
+                    company = company_elem.text.strip()
+
+            # Location fallback
+            if location == "Australia":
+                # Try to find text that looks like a location
+                # Heuristic: Look for text near "Location" or city names in header
+                header_elem = soup.find("header")
+                if header_elem:
+                    # This is vague, but existing logic was also vague. 
+                    # Let's try to find a specific element if possible, otherwise stick to what we have or improve slightly.
+                    # Based on inspection: p class="sc-897fca28-3 bviBmP" contained "Sydney"
+                    # But classes are dynamic. 
+                    pass
+
+            # Description fallback
+            if not description:
+                main_content = soup.find("main")
+                if main_content:
+                    description = self._remove_html_tags(str(main_content))
+                else:
+                    description = self._remove_html_tags(str(soup.body))
+
+            # Salary Extraction
+            # Check JSON-LD baseSalary first (rarely present but good to check)
+            if json_data and 'baseSalary' in json_data:
+                salary_val = json_data['baseSalary']
+                if isinstance(salary_val, dict):
+                    # value might be a dict or value
+                    val = salary_val.get('value')
+                    if isinstance(val, dict):
+                        min_sal = val.get('minValue')
+                        max_sal = val.get('maxValue')
+                        unit = val.get('unitText', '')
+                        if min_sal and max_sal:
+                            salary = f"{min_sal} - {max_sal} {unit}"
+                        elif val.get('value'):
+                            salary = f"{val.get('value')} {unit}"
+            
+            if not salary:
+                # Try to extract from description text
+                salary = self._extract_salary_from_text(description)
 
             # Seniority
             seniority = self._determine_seniority(title)
             
-            job_data = {
+            final_job_data = {
                 "job_title": title,
                 "company": company,
                 "locations": [location],
@@ -167,13 +245,46 @@ class ProspleScraper(BaseScraper):
                 "seniority": seniority,
                 "llm_analysis": None,
                 "platforms": ["prosple"],
-                "posted_at": None,
+                "posted_at": posted_at,
+                # Add extra fields if your DB supports them, otherwise they might be ignored or need schema update
+                # For now, we stick to the known schema fields. 
+                # If 'application_deadline' or 'work_type' are not in DB, we might store them in description or separate field if available.
+                # Assuming standard schema for now.
             }
             
-            self.save_job(job_data)
+            # If you have extended schema, you can add them. 
+            # For now, I'll log them or append to description if critical?
+            # Let's just keep standard fields.
+            
+            self.save_job(final_job_data)
 
         except Exception as e:
             self.logger.error(f"Error scraping job details {job_url}: {e}")
+
+    def _extract_salary_from_text(self, text: str) -> str:
+        if not text:
+            return None
+        
+        # Basic regex for salary patterns like $50,000, 60k, etc.
+        # This is a simple heuristic.
+        salary_patterns = [
+            r'\$\d{1,3}(?:,\d{3})*k?(?:\s*-\s*\$\d{1,3}(?:,\d{3})*k?)?',  # $100k - $120k, $50,000 - $60,000
+            r'\d{2,3}k\s*-\s*\d{2,3}k',  # 50k - 60k
+            r'\$\d{2,3}k', # $50k
+        ]
+        
+        # Look for lines containing "salary", "remuneration", "package"
+        lines = text.split('\n')
+        for line in lines:
+            line_lower = line.lower()
+            if any(kw in line_lower for kw in ['salary', 'remuneration', 'package', 'compensation']):
+                # Try to find a number pattern in this line
+                for pattern in salary_patterns:
+                    match = re.search(pattern, line, re.IGNORECASE)
+                    if match:
+                        return match.group(0)
+        
+        return None
 
     def _remove_html_tags(self, content: str) -> str:
         if not content:
