@@ -1,15 +1,15 @@
-# Jobly - Australian Job Market Scraper and Analyzer
+# Jobly - Australian Job Market Scraper
 
 A comprehensive tool for scraping and analyzing job postings from the Australian job market, with a focus on tech roles.
 
 ## Features
 
-- 🔍 **Web Scraping**: Automated scraping from major Australian job boards (Seek, etc.)
-- 🤖 **LLM Analysis**: AI-powered job description analysis using OpenAI
-- 📊 **Structured Data**: Extracts skills, tools, responsibilities, and more
-- 💾 **Supabase Storage**: Cloud-based storage with deduplication
-- ⏰ **Scheduled Runs**: Automated daily scraping and processing
-- 📈 **Analytics Ready**: Data structured for trend analysis
+- **Web Scraping**: Automated scraping from major Australian job boards (Seek, etc.)
+- **LLM Analysis**: AI-powered job description analysis using OpenAI
+- **Structured Data**: Extracts skills, tools, responsibilities, and more
+- **Supabase Storage**: Cloud-based storage with deduplication
+- **Scheduled Runs**: Automated daily scraping and processing
+- **Analytics Ready**: Data structured for trend analysis
 
 ## Project Structure
 
