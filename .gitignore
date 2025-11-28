@@ -3,16 +3,43 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
 
-# Env
+# Virtual Environments
 .env
 .venv/
 venv/
+env/
+ENV/
 
-# Packaging / Builds
-build/
-dist/
-*.egg-info/
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Logs
 *.log
+logs/
+
+# Playwright
+playwright/.auth/
+
+# Project specific
+.antigravityignore
