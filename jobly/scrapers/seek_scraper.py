@@ -97,18 +97,18 @@ class SeekScraper(BaseScraper):
         soup = BeautifulSoup(content, 'lxml')
         return soup.get_text(separator="\n", strip=True)
 
-    def _determine_seniority(self, title: str, description: str) -> str:
+    def _determine_seniority(self, title: str) -> str:
         """
         Determines the seniority level based on the job title and description.
         """
-        text = (title + " " + description).lower()
+        text = title.lower()
         if "senior" in text or "lead" in text or "principal" in text or "manager" in text:
             return "Senior"
         elif "junior" in text or "graduate" in text or "entry" in text:
             return "Junior"
         elif "intermediate" in text or "mid" in text:
             return "Intermediate"
-        return "Intermediate" # Default to Intermediate if unknown
+        return "N/A" 
 
     async def _process_job(self, page, job_url: str):
         """
@@ -122,24 +122,29 @@ class SeekScraper(BaseScraper):
             job_content = await page.content()
             job_soup = BeautifulSoup(job_content, 'lxml')
             
-            # Extract Details
+            # Extract Title
             title_elem = job_soup.find("h1", attrs={"data-automation": "job-detail-title"})
             title = title_elem.text.strip() if title_elem else "Unknown Title"
             
+            # Extract Company
             company_elem = job_soup.find("span", attrs={"data-automation": "advertiser-name"})
             company = company_elem.text.strip() if company_elem else "Unknown Company"
             
+            # Extract Location
             location_elem = job_soup.find("span", attrs={"data-automation": "job-detail-location"})
             location = location_elem.text.strip() if location_elem else "Australia"
             
+            # Extract Salary
             salary_elem = job_soup.find("span", attrs={"data-automation": "job-detail-salary"})
             salary = salary_elem.text.strip() if salary_elem else None
             
+            # Extract Description
             description_elem = job_soup.find("div", attrs={"data-automation": "jobAdDetails"})
             raw_content = str(description_elem) if description_elem else str(job_soup.find("body"))
-            
             description = self._remove_html_tags(raw_content)
-            seniority = self._determine_seniority(title, description)
+
+            # Extract seniority level (Junior, Senior, Intermediate)
+            seniority = self._determine_seniority(title)
             
             self.logger.info(f"Extracted: {title} at {company}")
 
