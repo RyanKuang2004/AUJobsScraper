@@ -10,6 +10,7 @@ from jobly.utils.scraper_utils import (
     remove_html_tags,
     extract_salary_from_text,
     determine_seniority,
+    extract_job_role
 )
 
 class ProspleScraper(BaseScraper):
@@ -19,7 +20,7 @@ class ProspleScraper(BaseScraper):
         # Base search URL as requested
         self.search_url_base = "https://au.prosple.com/search-jobs?locations=9692&study_fields=502&opportunity_types=1"
 
-    async def scrape(self, initial_run: bool = False):
+    async def scrape(self):
         self.logger.info("Starting Prosple Scraper...")
         
         items_per_page = 20
@@ -44,7 +45,7 @@ class ProspleScraper(BaseScraper):
                     
                     # Deduplication
                     current_urls = [d['url'] for d in job_links_data]
-                    existing_urls = self.db.check_existing_urls(current_urls, only_complete=initial_run)
+                    existing_urls = self.db.check_existing_urls(current_urls)
                     
                     new_jobs_data = [d for d in job_links_data if d['url'] not in existing_urls]
                     
@@ -124,7 +125,6 @@ class ProspleScraper(BaseScraper):
             # Initialize fields
             title = "Unknown Title"
             company = "Unknown Company"
-            location = "Australia"
             description = ""
             salary = None
             posted_at = None
@@ -153,6 +153,7 @@ class ProspleScraper(BaseScraper):
             if json_data:
                 self.logger.info("Found JSON-LD JobPosting data")
                 title = json_data.get('title', title)
+                title = extract_job_role(title)
                 
                 hiring_org = json_data.get('hiringOrganization')
                 if isinstance(hiring_org, dict):
@@ -161,14 +162,16 @@ class ProspleScraper(BaseScraper):
                     company = hiring_org
                 
                 job_loc = json_data.get('jobLocation')
-                if isinstance(job_loc, list) and len(job_loc) > 0:
-                    job_loc = job_loc[0]
+                if isinstance(job_loc, list):
+                    locations = [loc["address"] for loc in job_loc if isinstance(loc, dict)]
+
+                    for i, loc in enumerate(locations):
+                        if type(loc) == dict:
+                            locations[i] = loc.get('addressLocality')
                 
-                if isinstance(job_loc, dict):
-                    address = job_loc.get('address')
-                    if isinstance(address, dict):
-                        location = address.get('addressLocality', location)
-                
+                if locations == [None]:
+                    locations = ["Australia"]
+
                 description_html = json_data.get('description', "")
                 description = remove_html_tags(description_html)
                 
@@ -189,25 +192,13 @@ class ProspleScraper(BaseScraper):
                 if h1_elem:
                     h1_text = h1_elem.text.strip()
                     if h1_text:
-                        title = h1_text
+                        title = extract_job_role(h1_text)
 
             # Company fallback
             if company == "Unknown Company":
                 company_elem = soup.find("a", href=lambda x: x and "/graduate-employers/" in x)
                 if company_elem:
                     company = company_elem.text.strip()
-
-            # Location fallback
-            if location == "Australia":
-                # Try to find text that looks like a location
-                # Heuristic: Look for text near "Location" or city names in header
-                header_elem = soup.find("header")
-                if header_elem:
-                    # This is vague, but existing logic was also vague. 
-                    # Let's try to find a specific element if possible, otherwise stick to what we have or improve slightly.
-                    # Based on inspection: p class="sc-897fca28-3 bviBmP" contained "Sydney"
-                    # But classes are dynamic. 
-                    pass
 
             # Description fallback
             if not description:
@@ -237,9 +228,6 @@ class ProspleScraper(BaseScraper):
                 # Try to extract from description text
                 salary = extract_salary_from_text(description)
 
-            # Seniority
-            seniority = determine_seniority(title)
-
             # Application closing date
 
             if json_data and 'validThrough' in json_data:
@@ -248,11 +236,11 @@ class ProspleScraper(BaseScraper):
             final_job_data = {
                 "job_title": title,
                 "company": company,
-                "locations": [location],
+                "locations": locations,
                 "source_urls": [job_url],
                 "description": description,
                 "salary": salary,
-                "seniority": seniority,
+                "seniority": "Junior",
                 "llm_analysis": None,
                 "platforms": ["prosple"],
                 "posted_at": posted_at,
@@ -268,8 +256,10 @@ class ProspleScraper(BaseScraper):
         except Exception as e:
             self.logger.error(f"Error scraping job details {job_url}: {e}")
 
-
+    def run(self):
+        # Default run with config values
+        asyncio.run(self.scrape())
 
 if __name__ == "__main__":
     scraper = ProspleScraper()
-    asyncio.run(scraper.scrape())
+    scraper.run()

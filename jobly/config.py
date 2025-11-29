@@ -52,7 +52,7 @@ class ScraperSettings(BaseSettings):
     )
     
     initial_run: bool = Field(
-        default=True,
+        default=False,
         description="Initial run flag"
     )
 

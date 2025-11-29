@@ -11,8 +11,10 @@ from jobly.scrapers.prosple_scraper import ProspleScraper
 
 async def verify_live():
     #url = "https://au.prosple.com/graduate-employers/macquarie-technology-group/jobs-internships/graduate-program-customer-service-professional-technology"
-    url = "https://au.prosple.com/graduate-employers/capgemini-australia-and-new-zealand/jobs-internships/graduate-program-early-2026-it-information-systems-cloud-applications"
-
+    # url = "https://au.prosple.com/graduate-employers/capgemini-australia-and-new-zealand/jobs-internships/graduate-program-early-2026-it-information-systems-cloud-applications"
+    #url = "https://au.prosple.com/graduate-employers/jane-street/jobs-internships/quantitative-trader-3"
+    url = "https://au.prosple.com/graduate-employers/amazon-australia-new-zealand/jobs-internships/software-dev-engineer-graduate-sydney-aws"
+    
     print(f"Scraping live URL: {url}")
     
     scraper = ProspleScraper()

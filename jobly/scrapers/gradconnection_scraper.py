@@ -1,5 +1,7 @@
 import asyncio
 import random
+import re
+from datetime import datetime
 from typing import List, Dict, Any
 from playwright.async_api import async_playwright, Page
 from bs4 import BeautifulSoup
@@ -9,6 +11,7 @@ from jobly.utils.scraper_utils import (
     remove_html_tags,
     extract_salary_from_text,
     determine_seniority,
+    extract_job_role
 )
 
 
@@ -152,6 +155,7 @@ class GradConnectionScraper(BaseScraper):
             title_elem = job_soup.select_one("h1.employers-profile-h1")
             if title_elem:
                 title = title_elem.text.strip()
+                title = extract_job_role(title)
             
             # Extract Company
             company_elem = job_soup.select_one("h1.employers-panel-title")
@@ -223,11 +227,13 @@ class GradConnectionScraper(BaseScraper):
                 else:
                     description = remove_html_tags(str(job_soup.body))
             
-            # Determine seniority
-            seniority = determine_seniority(title)
-            
             self.logger.info(f"Extracted: {title} at {company}")
             self.logger.info(f"Location: {location}, Salary: {salary}, Deadline: {application_deadline}")
+
+            # Remove ordinal suffix (st, nd, rd, th)
+            cleaned = re.sub(r"(\d+)(st|nd|rd|th)", r"\1", application_deadline)
+            dt = datetime.strptime(cleaned, "%d %b %Y, %I:%M %p")
+            closing_date = dt.strftime("%Y-%m-%d %H:%M:%S")
 
             job_data = {
                 "job_title": title,
@@ -236,11 +242,11 @@ class GradConnectionScraper(BaseScraper):
                 "source_urls": [job_url],
                 "description": description,
                 "salary": salary,
-                "seniority": seniority,
+                "seniority": "Junior",
                 "llm_analysis": None,
                 "platforms": ["gradconnection"],
                 "posted_at": posted_at,
-                "closing_date": application_deadline
+                "closing_date": closing_date
             }
             
             saved_job = self.save_job(job_data)

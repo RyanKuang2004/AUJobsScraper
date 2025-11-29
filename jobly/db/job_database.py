@@ -65,7 +65,8 @@ class JobDatabase(BaseDatabase):
                 "description": job_data.get("description", record.get("description")),
                 "salary": job_data.get("salary", record.get("salary")),
                 "seniority": job_data.get("seniority", record.get("seniority")),
-                "posted_at": job_data.get("posted_at", record.get("posted_at"))
+                "posted_at": job_data.get("posted_at", record.get("posted_at")),
+                "closing_date": job_data.get("closing_date", record.get("closing_date"))
             }
             
             response = self.supabase.table("job_postings").update(update_payload).eq("id", record_id).execute()
@@ -85,7 +86,8 @@ class JobDatabase(BaseDatabase):
                 "salary": job_data.get("salary"),
                 "seniority": job_data.get("seniority"),
                 "llm_analysis": job_data.get("llm_analysis"),
-                "posted_at": job_data.get("posted_at")
+                "posted_at": job_data.get("posted_at"),
+                "closing_date": job_data.get("closing_date")
             }
             
             response = self.supabase.table("job_postings").insert(insert_payload).execute()

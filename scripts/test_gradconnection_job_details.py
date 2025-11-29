@@ -7,8 +7,8 @@ from jobly.scrapers.gradconnection_scraper import GradConnectionScraper
 
 async def test_job_extraction():
     # Example Job URL
-    #job_url = "https://au.gradconnection.com/employers/citadel-citadel-securities/jobs/citadel-securities-2025-2026-quantitative-research-phd-internship-engineering-10/"
-    job_url = "https://au.gradconnection.com/employers/tiktok/jobs/tiktok-graduate-frontend-engineer-tiktok-live-2026-start-8/"
+    job_url = "https://au.gradconnection.com/employers/citadel-citadel-securities/jobs/citadel-securities-2025-2026-quantitative-research-phd-internship-engineering-10/"
+    #job_url = "https://au.gradconnection.com/employers/tiktok/jobs/tiktok-graduate-frontend-engineer-tiktok-live-2026-start-8/"
 
     print(f"Testing GradConnection Job Extraction")
     print(f"URL: {job_url}")
@@ -35,7 +35,7 @@ async def test_job_extraction():
                 print(f"Salary:      {job_data.get('salary')}")
                 print(f"Seniority:   {job_data.get('seniority')}")
                 print(f"Posted At:   {job_data.get('posted_at')}")
-                print(f"Deadline:    {job_data.get('application_deadline')}")
+                print(f"Deadline:    {job_data.get('closing_date')}")
                 print("-" * 40)
                 print(f"Description:\n{job_data.get('description', '')}...")
                 print("-" * 40)

@@ -44,6 +44,9 @@ COPY scripts ./scripts
 # Install Python dependencies and the package
 RUN pip install -e .
 
+# ✅ Install spaCy model inside the image
+RUN python -m spacy download en_core_web_sm
+
 # Set Playwright browsers path to a location accessible by all users
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 

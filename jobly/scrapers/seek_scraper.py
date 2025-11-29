@@ -16,9 +16,10 @@ class SeekScraper(BaseScraper):
         super().__init__("seek")
         self.base_url = "https://www.seek.com.au"
 
-    async def scrape(self, initial_run: bool = False):
+    async def scrape(self):
         self.logger.info("Starting Seek Scraper...")
         
+        initial_run = settings.scraper.initial_run
         terms = settings.scraper.search_keywords
         limit = settings.scraper.max_pages
         days_ago = settings.scraper.initial_days_from_posted if initial_run else settings.scraper.days_from_posted

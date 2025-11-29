@@ -59,7 +59,7 @@ def main():
         
         # Run the scraper
         logger.info(f"Running {args.scraper.capitalize()} Scraper...")
-        scraper.run(initial_run=settings.scraper.initial_run)
+        scraper.run()
         logger.info("Scraper completed successfully")
         return 0
         

@@ -77,7 +77,7 @@ AUJobsScraper/
 ### Database Setup
 
 1. Create a Supabase project
-2. Run the schema from `jobly/db/schema.sql` to set up the `job_postings` and `conversations` tables
+2. Run the schema from `jobly/db/schema.sql` to set up the `job_postings` table
 
 ## Usage
 
@@ -266,7 +266,6 @@ ruff check jobly/ scripts/ tests/
 ### Database
 - **BaseDatabase**: Common Supabase initialization
 - **JobDatabase**: Job posting CRUD operations with smart deduplication
-- **ConversationDatabase**: Chat history storage (for future agent integration)
 
 ### Analyzers
 - **JobAnalyzer**: Uses LangChain + OpenAI to extract structured data from job descriptions

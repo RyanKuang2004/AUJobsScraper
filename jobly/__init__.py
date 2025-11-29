@@ -8,12 +8,11 @@ __version__ = "0.1.0"
 __author__ = "Ryan Kuang"
 
 # Package-level exports for convenient imports
-from jobly.db import JobDatabase, ConversationDatabase, BaseDatabase
+from jobly.db import JobDatabase, BaseDatabase
 from jobly.config import settings
 
 __all__ = [
     "JobDatabase",
-    "ConversationDatabase", 
     "BaseDatabase",
     "settings",
     "__version__",
