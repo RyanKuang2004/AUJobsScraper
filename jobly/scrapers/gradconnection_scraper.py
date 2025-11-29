@@ -240,7 +240,7 @@ class GradConnectionScraper(BaseScraper):
                 "llm_analysis": None,
                 "platforms": ["gradconnection"],
                 "posted_at": posted_at,
-                "application_deadline": application_deadline
+                "closing_date": application_deadline
             }
             
             saved_job = self.save_job(job_data)

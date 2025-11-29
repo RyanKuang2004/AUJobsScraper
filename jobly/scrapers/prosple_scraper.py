@@ -130,6 +130,7 @@ class ProspleScraper(BaseScraper):
             posted_at = None
             application_deadline = None
             work_type = None
+            closing_date = None
 
             # 1. Try JSON-LD Extraction
             json_ld_scripts = soup.find_all('script', type='application/ld+json')
@@ -238,6 +239,11 @@ class ProspleScraper(BaseScraper):
 
             # Seniority
             seniority = determine_seniority(title)
+
+            # Application closing date
+
+            if json_data and 'validThrough' in json_data:
+                closing_date = json_data['validThrough']
             
             final_job_data = {
                 "job_title": title,
@@ -250,10 +256,7 @@ class ProspleScraper(BaseScraper):
                 "llm_analysis": None,
                 "platforms": ["prosple"],
                 "posted_at": posted_at,
-                # Add extra fields if your DB supports them, otherwise they might be ignored or need schema update
-                # For now, we stick to the known schema fields. 
-                # If 'application_deadline' or 'work_type' are not in DB, we might store them in description or separate field if available.
-                # Assuming standard schema for now.
+                "closing_date": closing_date
             }
             
             # If you have extended schema, you can add them. 

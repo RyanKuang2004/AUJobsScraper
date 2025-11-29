@@ -17,15 +17,10 @@ create table public.job_postings (
   locations text[] not null,   -- List of locations
   
   -- Standard fields
-  title text not null,
+  job_title text not null,
   company text,
-  posted_at timestamptz,
-  raw_content text, -- Content from the most recent scrape
-  salary_min numeric,
-  salary_max numeric,
-  job_type text,
   
-  -- The core LLM output stored as flexible JSON
+  -- LLM output stored as flexible JSON
   llm_analysis jsonb,
   
   -- Embedding for semantic search
@@ -33,6 +28,13 @@ create table public.job_postings (
   
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
+  
+  -- Additional fields
+  description text,
+  seniority text,
+  salary text,
+  posted_at date,
+  closing_date date,
   
   constraint job_postings_pkey primary key (id),
   constraint job_postings_fingerprint_key unique (fingerprint)

@@ -156,6 +156,7 @@ class SeekScraper(BaseScraper):
                 "llm_analysis": llm_analysis,
                 "platforms": ["seek"],
                 "posted_at": posted_at,
+                "closing_date":  None
             }
             
             saved_job = self.save_job(job_data)
