@@ -4,9 +4,13 @@ from typing import List, Dict, Any
 from playwright.async_api import async_playwright, Page
 from bs4 import BeautifulSoup
 import json
-import re
 from jobly.scrapers.base_scraper import BaseScraper
 from jobly.config import settings
+from jobly.utils.scraper_utils import (
+    remove_html_tags,
+    extract_salary_from_text,
+    determine_seniority,
+)
 
 class ProspleScraper(BaseScraper):
     def __init__(self):
@@ -95,7 +99,7 @@ class ProspleScraper(BaseScraper):
                     path = link.lstrip('/')
                     link = f"{base}/{path}"
                 
-                jobs_data.append(link)
+                jobs_data.append({"url": link})
             
             return jobs_data
 
@@ -165,7 +169,7 @@ class ProspleScraper(BaseScraper):
                         location = address.get('addressLocality', location)
                 
                 description_html = json_data.get('description', "")
-                description = self._remove_html_tags(description_html)
+                description = remove_html_tags(description_html)
                 
                 posted_at = json_data.get('datePosted')
                 application_deadline = json_data.get('validThrough')
@@ -208,9 +212,9 @@ class ProspleScraper(BaseScraper):
             if not description:
                 main_content = soup.find("main")
                 if main_content:
-                    description = self._remove_html_tags(str(main_content))
+                    description = remove_html_tags(str(main_content))
                 else:
-                    description = self._remove_html_tags(str(soup.body))
+                    description = remove_html_tags(str(soup.body))
 
             # Salary Extraction
             # Check JSON-LD baseSalary first (rarely present but good to check)
@@ -230,10 +234,10 @@ class ProspleScraper(BaseScraper):
             
             if not salary:
                 # Try to extract from description text
-                salary = self._extract_salary_from_text(description)
+                salary = extract_salary_from_text(description)
 
             # Seniority
-            seniority = self._determine_seniority(title)
+            seniority = determine_seniority(title)
             
             final_job_data = {
                 "job_title": title,
@@ -261,46 +265,7 @@ class ProspleScraper(BaseScraper):
         except Exception as e:
             self.logger.error(f"Error scraping job details {job_url}: {e}")
 
-    def _extract_salary_from_text(self, text: str) -> str:
-        if not text:
-            return None
-        
-        # Basic regex for salary patterns like $50,000, 60k, etc.
-        # This is a simple heuristic.
-        salary_patterns = [
-            r'\$\d{1,3}(?:,\d{3})*k?(?:\s*-\s*\$\d{1,3}(?:,\d{3})*k?)?',  # $100k - $120k, $50,000 - $60,000
-            r'\d{2,3}k\s*-\s*\d{2,3}k',  # 50k - 60k
-            r'\$\d{2,3}k', # $50k
-        ]
-        
-        # Look for lines containing "salary", "remuneration", "package"
-        lines = text.split('\n')
-        for line in lines:
-            line_lower = line.lower()
-            if any(kw in line_lower for kw in ['salary', 'remuneration', 'package', 'compensation']):
-                # Try to find a number pattern in this line
-                for pattern in salary_patterns:
-                    match = re.search(pattern, line, re.IGNORECASE)
-                    if match:
-                        return match.group(0)
-        
-        return None
 
-    def _remove_html_tags(self, content: str) -> str:
-        if not content:
-            return ""
-        soup = BeautifulSoup(content, 'lxml')
-        return soup.get_text(separator="\n", strip=True)
-
-    def _determine_seniority(self, title: str) -> str:
-        text = title.lower()
-        if "senior" in text or "lead" in text or "principal" in text or "manager" in text:
-            return "Senior"
-        elif "junior" in text or "graduate" in text or "entry" in text:
-            return "Junior"
-        elif "intermediate" in text or "mid" in text:
-            return "Intermediate"
-        return "N/A"
 
 if __name__ == "__main__":
     scraper = ProspleScraper()

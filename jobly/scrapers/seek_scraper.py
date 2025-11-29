@@ -4,9 +4,12 @@ import random
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
 from jobly.scrapers.base_scraper import BaseScraper
-from datetime import datetime, timedelta
-
 from jobly.config import settings
+from jobly.utils.scraper_utils import (
+    remove_html_tags,
+    calculate_posted_date,
+    determine_seniority,
+)
 
 class SeekScraper(BaseScraper):
     def __init__(self):
@@ -90,52 +93,7 @@ class SeekScraper(BaseScraper):
             self.logger.error(f"Error getting job links from {url}: {e}")
             return []
 
-    def _remove_html_tags(self, content: str) -> str:
-        """
-        Removes HTML tags from the content and returns plain text.
-        """
-        if not content:
-            return ""
-        soup = BeautifulSoup(content, 'lxml')
-        return soup.get_text(separator="\n", strip=True)
-
-    def _determine_seniority(self, title: str) -> str:
-        """
-        Determines the seniority level based on the job title and description.
-        """
-        text = title.lower()
-        if "senior" in text or "lead" in text or "principal" in text or "manager" in text:
-            return "Senior"
-        elif "junior" in text or "graduate" in text or "entry" in text:
-            return "Junior"
-        elif "intermediate" in text or "mid" in text:
-            return "Intermediate"
-        elif "intermediate" in text or "mid" in text:
-            return "Intermediate"
-        return "N/A" 
-
-    def _calculate_posted_date(self, text: str) -> str:
-        """
-        Calculates the date based on 'Posted Xd ago' text.
-        """
-        try:
-            # Clean text: "Posted 2d ago" -> "2d"
-            clean_text = text.replace("Posted", "").replace("ago", "").strip().lower()
-            
-            days_ago = 0
-            if "d" in clean_text:
-                # Handle "30+d" case
-                clean_text = clean_text.replace("+", "")
-                days_ago = int(clean_text.replace("d", ""))
-            elif "h" in clean_text or "m" in clean_text:
-                # Hours or minutes ago = today
-                days_ago = 0
-                
-            posted_date = datetime.now() - timedelta(days=days_ago)
-            return posted_date.strftime("%Y-%m-%d")
-        except Exception as e:
-            self.logger.warning(f"Could not parse date from '{text}': {e}")
-            return datetime.now().strftime("%Y-%m-%d") 
+ 
 
     async def _process_job(self, page, job_url: str):
         """
@@ -168,10 +126,10 @@ class SeekScraper(BaseScraper):
             # Extract Description
             description_elem = job_soup.find("div", attrs={"data-automation": "jobAdDetails"})
             raw_content = str(description_elem) if description_elem else str(job_soup.find("body"))
-            description = self._remove_html_tags(raw_content)
+            description = remove_html_tags(raw_content)
 
             # Extract seniority level (Junior, Senior, Intermediate)
-            seniority = self._determine_seniority(title)
+            seniority = determine_seniority(title)
 
             # Extract posted_at
             posted_at = None
@@ -179,7 +137,7 @@ class SeekScraper(BaseScraper):
             for elem in meta_elements:
                 if "Posted" in elem.text:
                     raw_text = elem.text.strip()
-                    posted_at = self._calculate_posted_date(raw_text)
+                    posted_at = calculate_posted_date(raw_text)
                     break
             
             self.logger.info(f"Extracted: {title} at {company}")

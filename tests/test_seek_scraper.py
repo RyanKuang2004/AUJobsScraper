@@ -5,6 +5,11 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from jobly.scrapers.seek_scraper import SeekScraper
+from jobly.utils.scraper_utils import (
+    remove_html_tags,
+    calculate_posted_date,
+    determine_seniority,
+)
 
 
 @pytest.fixture
@@ -66,10 +71,10 @@ class TestSeekScraper:
         assert seek_scraper.platform == "seek"
         assert seek_scraper.base_url == "https://www.seek.com.au"
 
-    def test_remove_html_tags(self, seek_scraper):
+    def test_remove_html_tags(self):
         """Test HTML tag removal."""
         html_content = "<h1>Title</h1><p>This is a <strong>test</strong>.</p>"
-        result = seek_scraper._remove_html_tags(html_content)
+        result = remove_html_tags(html_content)
         # BeautifulSoup adds newlines for block elements
         assert "Title" in result
         assert "This is a" in result
@@ -77,14 +82,14 @@ class TestSeekScraper:
         # Verify no HTML tags remain
         assert "<" not in result and ">" not in result
 
-    def test_remove_html_tags_empty(self, seek_scraper):
+    def test_remove_html_tags_empty(self):
         """Test HTML tag removal with empty content."""
-        result = seek_scraper._remove_html_tags("")
+        result = remove_html_tags("")
         assert result == ""
 
-    def test_remove_html_tags_none(self, seek_scraper):
+    def test_remove_html_tags_none(self):
         """Test HTML tag removal with None content."""
-        result = seek_scraper._remove_html_tags(None)
+        result = remove_html_tags(None)
         assert result == ""
 
     @pytest.mark.parametrize("title,expected_seniority", [
@@ -100,9 +105,9 @@ class TestSeekScraper:
         ("Software Developer", "N/A"),
         ("Full Stack Engineer", "N/A"),
     ])
-    def test_determine_seniority(self, seek_scraper, title, expected_seniority):
+    def test_determine_seniority(self, title, expected_seniority):
         """Test seniority determination from job titles."""
-        result = seek_scraper._determine_seniority(title)
+        result = determine_seniority(title)
         assert result == expected_seniority
 
     @pytest.mark.parametrize("text,days_ago", [
@@ -113,10 +118,10 @@ class TestSeekScraper:
         ("Posted 30m ago", 0),
         ("Just now", 0),
     ])
-    def test_calculate_posted_date(self, seek_scraper, text, days_ago):
+    def test_calculate_posted_date(self, text, days_ago):
         """Test date calculation from posted text."""
         expected_date = (datetime.now() - timedelta(days=days_ago)).strftime("%Y-%m-%d")
-        result = seek_scraper._calculate_posted_date(text)
+        result = calculate_posted_date(text)
         assert result == expected_date
 
     @pytest.mark.asyncio

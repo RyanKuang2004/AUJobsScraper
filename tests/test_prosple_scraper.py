@@ -37,9 +37,7 @@ async def test_get_job_links(scraper):
     
     assert len(links) == 2
     assert links[0]['url'] == "https://au.prosple.com/graduate-employers/company-a/jobs/job-1"
-    assert links[0]['salary'] is None
     assert links[1]['url'] == "https://other.com/job-2"
-    assert links[1]['salary'] is None
 
 @pytest.mark.asyncio
 async def test_process_job(scraper):
@@ -62,8 +60,7 @@ async def test_process_job(scraper):
     mock_page.content.return_value = html_content
     
     job_info = {
-        "url": "https://au.prosple.com/job-1",
-        "salary": "AUD 65k"
+        "url": "https://au.prosple.com/job-1"
     }
     
     await scraper._process_job(mock_page, job_info)
@@ -73,7 +70,8 @@ async def test_process_job(scraper):
     
     assert saved_data['job_title'] == "Graduate Developer"
     assert saved_data['company'] == "Tech Corp"
-    assert saved_data['salary'] == "AUD 65k"
+    # Salary is not extracted from listing, only from job page if present
+    assert saved_data['salary'] is None
     assert "We are looking for a developer" in saved_data['description']
     assert saved_data['seniority'] == "Junior" # Graduate -> Junior
     assert saved_data['posted_at'] is None

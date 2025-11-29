@@ -10,7 +10,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from jobly.scrapers.prosple_scraper import ProspleScraper
 
 async def verify_live():
-    url = "https://au.prosple.com/graduate-employers/macquarie-technology-group/jobs-internships/graduate-program-customer-service-professional-technology"
+    #url = "https://au.prosple.com/graduate-employers/macquarie-technology-group/jobs-internships/graduate-program-customer-service-professional-technology"
+    url = "https://au.prosple.com/graduate-employers/capgemini-australia-and-new-zealand/jobs-internships/graduate-program-early-2026-it-information-systems-cloud-applications"
+
     print(f"Scraping live URL: {url}")
     
     scraper = ProspleScraper()
