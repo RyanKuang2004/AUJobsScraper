@@ -4,12 +4,13 @@ A comprehensive tool for scraping and analyzing job postings from the Australian
 
 ## Features
 
-- **Web Scraping**: Automated scraping from major Australian job boards (Seek, etc.)
+- **Web Scraping**: Automated scraping from major Australian job boards (Seek, Prosple, GradConnection)
 - **LLM Analysis**: AI-powered job description analysis using OpenAI
 - **Structured Data**: Extracts skills, tools, responsibilities, and more
 - **Supabase Storage**: Cloud-based storage with deduplication
 - **Scheduled Runs**: Automated daily scraping and processing
 - **Analytics Ready**: Data structured for trend analysis
+- **Docker Support**: Run individual or multiple scrapers using Docker Compose
 
 ## Project Structure
 
@@ -82,11 +83,24 @@ AUJobsScraper/
 
 ### Run the Scraper
 
-Collect job postings from job boards:
+Collect job postings from job boards. The scraper supports multiple platforms:
+
+**Command-line usage:**
 
 ```bash
+# Run Seek scraper (default)
 python scripts/run_scraper.py
+
+# Run specific scrapers
+python scripts/run_scraper.py --scraper seek
+python scripts/run_scraper.py --scraper prosple
+python scripts/run_scraper.py --scraper gradconnection
 ```
+
+**Available platforms:**
+- `seek`: Seek.com.au
+- `prosple`: Prosple (au.prosple.com)
+- `gradconnection`: GradConnection (au.gradconnection.com)
 
 ### Run the Processor
 
@@ -108,7 +122,7 @@ Set `RUN_ON_STARTUP=true` in your environment to run immediately on start.
 
 ## Docker Deployment
 
-Run both the scraper and processor simultaneously using Docker Compose.
+Run scrapers and processor using Docker Compose. Each scraper platform runs as a separate service.
 
 ### Prerequisites
 
@@ -122,7 +136,7 @@ Run both the scraper and processor simultaneously using Docker Compose.
 docker-compose build
 ```
 
-**Run both services** (scraper + processor concurrently):
+**Run all scraper services** (all platforms + processor):
 ```bash
 docker-compose up
 ```
@@ -132,7 +146,40 @@ docker-compose up
 docker-compose up -d
 ```
 
-### Managing Services
+### Managing Scraper Services
+
+The following scraper services are available:
+- `scraper-seek`: Seeks.com.au scraper
+- `scraper-prosple`: Prosple scraper
+- `scraper-gradconnection`: GradConnection scraper
+- `processor`: Job analyzer/processor
+
+**Run individual scrapers**:
+```bash
+# Run only Seek scraper
+docker-compose up scraper-seek
+
+# Run only Prosple scraper
+docker-compose up scraper-prosple
+
+# Run only GradConnection scraper
+docker-compose up scraper-gradconnection
+
+# Run only the processor
+docker-compose up processor
+```
+
+**Run multiple specific services**:
+```bash
+# Run Seek and Prosple scrapers together
+docker-compose up scraper-seek scraper-prosple
+
+# Run all scrapers (no processor)
+docker-compose up scraper-seek scraper-prosple scraper-gradconnection
+
+# Run scrapers + processor
+docker-compose up scraper-seek processor
+```
 
 **View logs**:
 ```bash
@@ -140,7 +187,9 @@ docker-compose up -d
 docker-compose logs -f
 
 # Specific service
-docker-compose logs -f scraper
+docker-compose logs -f scraper-seek
+docker-compose logs -f scraper-prosple
+docker-compose logs -f scraper-gradconnection
 docker-compose logs -f processor
 ```
 
@@ -151,21 +200,16 @@ docker-compose down
 
 **Restart services**:
 ```bash
+# Restart all
 docker-compose restart
-```
 
-**Run individual service**:
-```bash
-# Run only the scraper
-docker-compose up scraper
-
-# Run only the processor
-docker-compose up processor
+# Restart specific service
+docker-compose restart scraper-seek
 ```
 
 ### Resource Management
 
-The `docker-compose.yml` includes commented resource limits. Uncomment to restrict CPU/memory usage:
+The `docker-compose.yml` uses resource-efficient logging settings. You can add resource limits for each service if needed:
 ```yaml
 deploy:
   resources:
@@ -215,6 +259,8 @@ ruff check jobly/ scripts/ tests/
 ### Scrapers
 - **BaseScraper**: Abstract base class for all scrapers
 - **SeekScraper**: Scrapes jobs from Seek.com.au
+- **ProspleScraper**: Scrapes jobs from Prosple (au.prosple.com)
+- **GradConnectionScraper**: Scrapes jobs from GradConnection (au.gradconnection.com)
 - Extensible design for adding more job boards
 
 ### Database
