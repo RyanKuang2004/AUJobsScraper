@@ -10,7 +10,8 @@ from jobly.utils.scraper_utils import (
     remove_html_tags,
     extract_salary_from_text,
     determine_seniority,
-    extract_job_role
+    extract_job_role,
+    normalize_locations,
 )
 
 class ProspleScraper(BaseScraper):
@@ -171,6 +172,9 @@ class ProspleScraper(BaseScraper):
                 
                 if locations == [None]:
                     locations = ["Australia"]
+                
+                # Normalize locations to structured format
+                locations = normalize_locations(locations)
 
                 description_html = json_data.get('description', "")
                 description = remove_html_tags(description_html)

@@ -27,7 +27,7 @@ def sample_job_html():
     return """
     <html>
         <body>
-            <h1 data-automation="job-detail-title">Senior Python Developer</h1>
+            <h1 data-automation="job-detail-title">Senior Python Developer (Remote) - 2025 Start</h1>
             <span data-automation="advertiser-name">Tech Company Pty Ltd</span>
             <span data-automation="job-detail-location">Sydney NSW</span>
             <span data-automation="job-detail-salary">$120,000 - $150,000 per year</span>
@@ -183,11 +183,14 @@ class TestSeekScraper:
         job_data = seek_scraper.save_job.call_args[0][0]
         
         # Verify all fields are extracted correctly
-        assert job_data["job_title"] == "Senior Python Developer"
+        # Title should be cleaned: "Senior Python Developer (Remote) - 2025 Start" -> "Python Developer"
+        assert job_data["job_title"] == "Python Developer"
         assert job_data["company"] == "Tech Company Pty Ltd"
         assert job_data["locations"] == ["Sydney NSW"]
         assert job_data["source_urls"] == ["https://seek.com.au/job/12345"]
         assert job_data["salary"] == "$120,000 - $150,000 per year"
+        # Seniority is determined from the ORIGINAL raw title, not cleaned title
+        # So "Senior Python Developer (Remote) - 2025 Start" should still detect "Senior"
         assert job_data["seniority"] == "Senior"
         assert job_data["platforms"] == ["seek"]
         # Should be 2 days ago

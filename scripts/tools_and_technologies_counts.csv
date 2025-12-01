@@ -1,0 +1,851 @@
+Tool/Technology,Count
+AWS,58
+Azure,45
+Power BI,34
+Python,28
+Git,23
+Docker,20
+Tableau,20
+React,20
+Terraform,18
+TensorFlow,17
+SQL,17
+PyTorch,16
+CI/CD pipelines,16
+Databricks,16
+CI/CD,16
+Kubernetes,16
+Snowflake,16
+GCP,16
+Azure DevOps,14
+Linux,13
+Angular,11
+GitHub,10
+Jira,9
+TypeScript,9
+LangChain,8
+R,8
+PostgreSQL,8
+Microsoft Fabric,7
+Spark,7
+LangGraph,7
+Node.js,7
+Excel,7
+APIs,6
+Confluence,6
+MLflow,6
+dbt,6
+SQL Server,6
+JavaScript,6
+GitHub Actions,6
+FastAPI,6
+S3,6
+Scikit-learn,6
+Microsoft Azure,6
+version control,6
+Azure Data Factory,5
+Vue,5
+Jenkins,5
+Google Cloud,5
+GitHub Copilot,5
+SageMaker,5
+Matillion,5
+scikit-learn,4
+Bitbucket,4
+Windows,4
+REST,4
+containerisation,4
+DAX,4
+LLMs,4
+Google Cloud Platform (GCP),4
+CloudFormation,4
+MySQL,4
+PowerBI,4
+Pandas,4
+Windows Server,4
+Vue.js,4
+SAS,4
+AWS Glue,4
+Salesforce,4
+Redshift,4
+NumPy,3
+Delta Lake,3
+LlamaIndex,3
+Copilot Studio,3
+ChatGPT,3
+TeamCity,3
+Next.js,3
+Pinecone,3
+MongoDB,3
+Glue,3
+BigQuery,3
+Redis,3
+Transformers,3
+GitLab,3
+GraphQL,3
+DevOps practices,3
+SSRS,3
+MLOps,3
+Amazon Web Services (AWS),3
+AWS SageMaker,3
+Azure AI,3
+Google Vertex AI,3
+Airflow,3
+Fivetran,3
+ERP systems,3
+Typescript,3
+Data Factory,3
+Bedrock,3
+Java,3
+Power Platform,2
+Fabric,2
+Power Query,2
+Power Pivot,2
+Semantic Kernel,2
+Serverless Framework,2
+Cloudwatch,2
+SQS,2
+ECS Fargate,2
+SSIS,2
+NodeJS,2
+NestJS,2
+microservices,2
+Figma,2
+Jest,2
+infrastructure-as-code,2
+Blazor,2
+Bootstrap,2
+RESTful APIs,2
+OpenAI,2
+pgvector,2
+Hugging Face,2
+CrewAI,2
+Azure OpenAI,2
+Bicep,2
+Lambda,2
+Unity,2
+DynamoDB,2
+NLTK,2
+HTML,2
+CSS,2
+Azure App Services,2
+Azure SQL,2
+Azure Storage,2
+Azure Service Bus,2
+React Native,2
+REST APIs,2
+Databricks Asset Bundles (DAB),2
+Freshdesk,2
+REST API,2
+Databases,2
+Android,2
+Playwright,2
+serverless,2
+Alteryx,2
+JIRA,2
+Generative AI tools,2
+firewalls,2
+Agile,2
+Azure Purview,2
+Azure Machine Learning,2
+orchestration frameworks,2
+LangSmith,2
+Kubeflow,2
+Ansible,2
+Apache Kafka,2
+vector DBs,2
+RAG pipelines,2
+Teradata,2
+Informatica,2
+DBT,2
+PowerPoint,2
+C#,2
+IaC,2
+Looker,2
+Data Lake,2
+Dataverse,2
+Fabric Lakehouse/Warehouse,2
+IAM,2
+GenAI tooling,2
+prompt engineering,2
+Azure API Management (APIM),2
+Azure Logic Apps,2
+SPSS,2
+QGIS,2
+Google,2
+GenAI tools,2
+RDS,2
+NoSQL,2
+Django,2
+Athena,2
+Cloud computing solutions,1
+research platforms and tools,1
+Microsoft SQL Server,1
+Azure integration solutions,1
+pandas,1
+OpenCV,1
+.NET,1
+Tableau Desktop,1
+Tableau Server,1
+IBM Maximo,1
+Oracle SQL,1
+Azure AI services,1
+Synapse,1
+Azure Monitor,1
+Log Analytics,1
+Microsoft Graph,1
+Purview,1
+RBAC,1
+Entra ID,1
+Azure ML,1
+Databricks ML,1
+serverless compute environments,1
+large language models,1
+hosting LLMs securely on Azure,1
+generative AI integration,1
+AWS Redshift,1
+AutoGen,1
+OpenAI Responses API,1
+Copilot,1
+Foundry,1
+Singularity,1
+Slurm,1
+HPC environments,1
+GPU architecture knowledge,1
+GPU performance profiling tools,1
+distributed training,1
+AWS Bedrock,1
+Snowflake Cortex,1
+API development,1
+Google Cloud Platform,1
+Cloudflare,1
+RDS Serverless,1
+Intruder,1
+Cloudability,1
+SIEM tools,1
+Dataiku,1
+relational databases,1
+container orchestration concepts,1
+Langchain/Langraph,1
+Github Copilot,1
+Prompt Engineering,1
+VUE.JS,1
+Firebase,1
+Javascript/Typescript,1
+HTML/CSS,1
+BitBucket,1
+CRM platforms,1
+ThoughtSpot,1
+"Microsoft Azure tools (Synapse, Fabric, Data Factory)",1
+Privacy Preserving Record Linkage (PPRL),1
+ETL pipelines,1
+PowerShell,1
+FHIR standards,1
+ISO27001,1
+Confluent,1
+machine learning frameworks,1
+API driven prediction services,1
+Data warehousing,1
+CI/CD for models,1
+feature stores,1
+model registry,1
+experiment tracking,1
+monitoring,1
+automated rollback,1
+automated testing tools,1
+Windows Forms,1
+WPF,1
+NuGet package manager,1
+RxJS,1
+command-line tooling,1
+Public-facing APIs,1
+Mocha,1
+Cypress,1
+Express,1
+real-time streaming,1
+event-driven systems,1
+AI/LLM integrations,1
+SAST tools,1
+code editor extensions,1
+graph-backed code intelligence services,1
+HTML5,1
+CSS3,1
+SCSS,1
+Entity Framework Core,1
+Visual Studio,1
+browser dev tools,1
+SignalR,1
+gRPC,1
+WebSockets,1
+xUnit,1
+bUnit,1
+.NET Core / .NET 6+,1
+Clean Architecture,1
+CQRS,1
+Dependency Injection,1
+HL7,1
+FHIR,1
+DICOM,1
+RPA,1
+ API integrations,1
+BI tools,1
+MLOps practices,1
+Microsoft Power Automate,1
+low-code development platforms,1
+Business Intelligence Tools,1
+corporate information systems,1
+Google ADK,1
+Microsoft AI platforms,1
+Weaviate,1
+Cognitive Search,1
+Cosmos DB,1
+vector databases,1
+graph databases,1
+GPT APIs,1
+testing frameworks,1
+deployment automation,1
+data mesh / federated data product design,1
+API wrapped data services,1
+pytest,1
+Unreal Engine,1
+NVIDIA Isaac Sim,1
+Gazebo,1
+ROS2,1
+3D modelling tools,1
+game engine content creation,1
+cloud-based simulation infrastructure,1
+Agent Framework,1
+Elasticsearch,1
+Anthropic,1
+Software Development Kits (SDKs),1
+Frameworks,1
+VertexAI,1
+Infrastructure as Code,1
+EC2,1
+ELB,1
+VPC,1
+Route 53,1
+Compute Engine,1
+Pub/Sub,1
+ElasticSearch,1
+Solr,1
+GraphDB,1
+GCS,1
+AWS Cloud Operations,1
+Hadoop,1
+Flink,1
+SQL/Hive,1
+SpaCy,1
+Spring,1
+Hibernate,1
+JPA,1
+JUnit,1
+Alibaba Cloud,1
+AngularJS,1
+CI/CD pipelines (AWS),1
+"Messaging APIs (WhatsApp, WeChat, Line)",1
+CRM system integrations,1
+Web-based content management systems,1
+Machine learning / LLM models integration into SAAS products,1
+Azure Kubernetes Service,1
+Azure Key Vault,1
+Azure Data Explorer,1
+Azure Event Hub,1
+Azure Function Apps,1
+Application Insights,1
+RTSP,1
+WebRTC,1
+HLS,1
+EF Core,1
+ADO.NET,1
+Appian,1
+in-house AI platform,1
+"AWS (S3, EC2, EMR)",1
+Scala,1
+Large language models,1
+Ruby on Rails,1
+YOLO,1
+computer-vision pipelines,1
+custom training infrastructure,1
+Xamarin Forms,1
+RESTful API,1
+iOS MDM,1
+MDM platforms,1
+IIS,1
+PHP,1
+Apache,1
+mapping APIs,1
+Geospatial data tools,1
+Datadog,1
+Splunk,1
+New Relic,1
+SeviceNow,1
+Zendesk,1
+Click Up,1
+centralised artefact repositories,1
+Streaming APIs,1
+Cloud infrastructure,1
+Containerization,1
+search engines,1
+online maps,1
+website information,1
+relevant software,1
+Test automation,1
+Django Rest Framework,1
+React Router v7/Remix,1
+Google Document AI or similar experience with document data extraction,1
+Flume,1
+computer vision libraries/frameworks,1
+AI tools,1
+"Microsoft Fabric ecosystem (Synapse, Data Factory, OneLake, Power BI, SQL Server, Azure components)",1
+MCP,1
+event-driven architectures,1
+Java 21,1
+QAD,1
+Square,1
+Boomi,1
+data warehousing,1
+business intelligence,1
+data visualisation tools,1
+"Excel (pivot tables, lookups, basic formulas)",1
+Relational databases,1
+iOS,1
+VSCode,1
+Emacs,1
+Vi,1
+Unix,1
+MacOS,1
+UI/UX design,1
+network routing,1
+port forwarding,1
+Version control systems,1
+front-end frameworks,1
+LLM frameworks,1
+Python packages,1
+Azure Synapse Analytics,1
+Azure SQL Database,1
+Azure Databricks,1
+Azure Cosmos DB,1
+Cognitive Services,1
+ARM templates,1
+Azure Cloud Services,1
+related frameworks,1
+MQTT,1
+Azure/AWS IoT platforms,1
+Linux operating systems,1
+Embedded Linux,1
+microcontroller programming,1
+networking concepts,1
+telemetry protocols,1
+safety critical applications,1
+model serving,1
+Web Services connectors,1
+AD/LDAP,1
+HR systems,1
+"Excel (Advanced) with charts, pivot tables, formulas",1
+Air Maestro scheduling and rostering software (or similar),1
+CASA Fatigue Management Systems (FMS),1
+ADK,1
+observability tools for LLMs,1
+Langfuse,1
+Microsoft suite,1
+AI platforms,1
+GitHub integrated with Databricks,1
+Databricks deployment models,1
+infrastructure configuration,1
+CI/CD tools,1
+APIs (API development frameworks),1
+monitoring tools,1
+secure deployment protocols,1
+versioning of open-source packages,1
+SQLAlchemy 2.x,1
+ADRs/design docs,1
+observability,1
+LLM inference,1
+eval systems,1
+agent tooling,1
+LLM serving,1
+prompting,1
+tracing,1
+basic coding,1
+IBM InfoSphere DataStage,1
+Teradata MPP Platform,1
+Azure Data Flows,1
+Azure SQL data platform,1
+Azure Event Hubs,1
+Coalesce,1
+Apache Airflow,1
+Wherescape RED,1
+Wherescape 3D,1
+SSAS,1
+AI Agents,1
+data and financial analysis tools,1
+"Hands-on experience with AWS services such as EC2, EMR, RDS, S3, Redshift, Glue, Athena, and DynamoDB",1
+DataOps toolsets,1
+MicroStrategy,1
+AWS Solution Architecture experience,1
+ANZSCTS database,1
+Cardiac Surgery database,1
+microscopy,1
+image analysis,1
+electrophysiology,1
+Claude Code,1
+Gemini,1
+GPT,1
+Claude Sonnet,1
+Windows Driver and Kernel component development,1
+Mulesoft,1
+LIMS experience/exposure,1
+IT Systems,1
+IT Projects,1
+Squiz Matrix/DXP platform,1
+Javascript,1
+Go,1
+UNIX,1
+open source software,1
+specialised commercial software packages,1
+routers,1
+switches,1
+servers,1
+desktops,1
+CI/CD practices,1
+Event Driven Architecture,1
+CI pipelines,1
+Pronto Xi,1
+Apple iOS / iPadOS programming,1
+VB.NET,1
+C#.NET,1
+Microsoft Visual Studio,1
+Informix (IDS),1
+SDLC processes,1
+Trello,1
+AutoCad,1
+Visio,1
+IaaS,1
+PaaS,1
+cloud applications and infrastructure,1
+Atlassian tools,1
+SolarWinds,1
+Foglight,1
+ITIL,1
+SDLC,1
+Azure Backup,1
+Commvault,1
+Metallic,1
+Red Hat Enterprise Linux,1
+Serverless,1
+SST,1
+Sequelize,1
+Prisma,1
+Lighthouse,1
+Web Vitals,1
+Postgres,1
+GCloud,1
+Lightdash,1
+Estuary,1
+Temporal,1
+Segment,1
+Braze,1
+Mixpanel,1
+Full Story,1
+GA4,1
+automation,1
+ADABAS,1
+ADABAS Natural,1
+Software AG,1
+Database utilities,1
+Third-party monitoring tools,1
+Selenium,1
+Cucumber,1
+Rest Assured,1
+SharePoint,1
+Qlik,1
+Xero,1
+Zapier,1
+CRM systems,1
+AWS services,1
+Stibo STEP,1
+STEP REST API,1
+STEP WebUI,1
+STEP integration components,1
+STEP Data model,1
+Java/J2EE,1
+XML,1
+XSLT,1
+REST web services,1
+SOAP web services,1
+Atlassian Suite or similar tools,1
+Infrastructure-as-Code scripts,1
+D365 CRM,1
+APIM,1
+Logic Apps,1
+Functions,1
+Common Data Model (CDM),1
+AWS Lex,1
+Polly,1
+Rekognition,1
+Unreal Metahuman,1
+NVIDIA Audio2Face,1
+Adobe Experience Manager (AEM),1
+Content Fragments,1
+Experience Fragments,1
+DAM (Digital Asset Management),1
+AEM workflows,1
+Servlets,1
+Services,1
+Schedulers,1
+AEM SPA Editor,1
+Google Cloud Platform (BigQuery),1
+Dataprep,1
+Microsoft Excel,1
+Google Sheets,1
+Microsoft PowerPoint,1
+Google Slides,1
+Large Language Models (LLMs),1
+Configuration as code,1
+cloud-native engineering,1
+Dynamics 365 CRM,1
+Common Data Model,1
+Azure Functions,1
+Dynamics 365 Finance & Operations (F&O),1
+Microsoft Sentinel,1
+Copilot for Security,1
+KQL queries,1
+Google BigQuery,1
+CRM analytics tools,1
+PostgreSQL (pgvector),1
+Docker/Kubernetes deployment experience,1
+GPU infrastructure,1
+Transformers/TRL,1
+Veeam Backup and Replication,1
+VMWare vSphere,1
+Cloud Foundation,1
+Site Recovery Manager,1
+Aria Automation,1
+Aria Orchestrator,1
+Aria Operations,1
+VMWare NSX,1
+NVivo,1
+citation management tools,1
+AWS cloud platform,1
+enterprise geospatial platform(s),1
+"Python (pandas, scikit-learn, pytorch, polars)",1
+Jupyter notebooks,1
+LIME,1
+SHAP,1
+LLMs or AI agents,1
+Epic,1
+Gradle,1
+Node/NPM,1
+Angular CLI,1
+Codefinder,1
+Turbocoder,1
+iMedX AI Companion tool,1
+One Defence Data Platform,1
+data lake architectures,1
+lake house architectures,1
+Databricks Unity Catalog,1
+Enterprise Knowledge Graph,1
+Cloud Enterprise Data Warehouse,1
+Liquid AI,1
+Circana tools,1
+GenAI,1
+modern ML/AI frameworks,1
+Vercel,1
+Informatica Data Management Cloud,1
+Informatica Ref 360,1
+dbt (Data Build Tool),1
+EEG,1
+EMG,1
+R-programming language,1
+data.table,1
+ggplot2,1
+numpy,1
+scipy,1
+sklearn,1
+pytorch,1
+MATLAB,1
+3M Codefinder,1
+SOAP,1
+Analyst Notebook,1
+iBase,1
+Microsoft Office,1
+Palantir,1
+Meta,1
+Git/GitHub (including GitHub Copilot),1
+Optimizely,1
+VueJS,1
+Nuxt.js,1
+NextJS,1
+Vuex,1
+Pinia,1
+Redux,1
+MobX,1
+Vite,1
+Babel,1
+ESLint,1
+Prettier,1
+Webpack,1
+code deployment,1
+Design system experience,1
+mobile native,1
+dot net core,1
+cloud environments,1
+on-premise,1
+structured and unstructured databases,1
+Observability,1
+Application Security,1
+Unit Testing,1
+Regression Testing,1
+DevSecOps,1
+Azure AI Foundry,1
+Power automate,1
+Power apps,1
+Azure AI foundry,1
+Microsoft Office suite,1
+CrowdStrike Falcon platform,1
+AKS,1
+EKS,1
+GKS,1
+software development frameworks,1
+"ETL (Extract, Transform, Load) pipelines",1
+SEO Tools API integrations,1
+scripted web crawling of large websites,1
+fine-tuning,1
+DevOps/MLOps tooling,1
+LLM tooling,1
+Agentic AI frameworks,1
+Azure cloud services,1
+AI tooling,1
+STATA,1
+Prefect,1
+FiveTran,1
+NetSuite,1
+HiBob,1
+CDC,1
+real-time data processing,1
+data lineage,1
+data cataloging,1
+metadata management,1
+cloud-based inference pipelines,1
+Seer Cloud infrastructure,1
+Table Storage,1
+Service Fabric,1
+Atlassian Suite,1
+multi-agent systems,1
+SpringBoot,1
+OpenAI Codex,1
+AI coding tools,1
+JWT,1
+OAuth,1
+secure coding practices,1
+Erwin,1
+ER/Studio,1
+AWS Lambda,1
+AWS Step Functions,1
+AWS S3,1
+AWS RDS,1
+AWS EC2,1
+Spotfire,1
+AWS CDK,1
+Laravel,1
+Expo.dev,1
+Tailwind,1
+Flutter,1
+NLP,1
+third-party APIs,1
+ServiceNow,1
+StratoKey API,1
+LLM fine-tuning,1
+API integration,1
+version-control systems,1
+modern development frameworks,1
+Cloud platforms,1
+Debugging tools,1
+GitHub CI,1
+Monday,1
+DevOps,1
+visualisation tools,1
+XGBoost,1
+documentation,1
+Langchain,1
+Neo4j,1
+Argo,1
+Primavera P6,1
+MS Project,1
+VBA,1
+Data visualization,1
+Data pipelines,1
+ETL,1
+A/B testing frameworks,1
+Experimentation design,1
+ServiceNow platform,1
+LucidCharts,1
+PowerAutomate,1
+DataIKU,1
+Master Data Management (MDM),1
+Cursor licences,1
+context engineering frameworks,1
+MCP integration,1
+ArcGIS,1
+Data Bricks,1
+Microsoft,1
+Automated testing,1
+Snowpipe,1
+SnowSQL,1
+EMR,1
+Lake Formation,1
+KMS,1
+DataSync,1
+"Teradata (TPT, FastLoad, BTEQ, Utilities)",1
+Cloudera,1
+DataStage,1
+HDFS,1
+FAISS,1
+DevOps workflows,1
+Dagster,1
+Amplitude,1
+Hubspot,1
+Qualtrics,1
+Looker Studio,1
+Metabase,1
+Replit,1
+Custom data integrations,1
+PySpark,1
+Azure Synapse,1
+Parquet,1
+Dataflows Gen2,1
+Notebooks,1
+Databricks platform,1
+containerization,1
+Business Objects,1
+Plotly Dash,1
+Microsoft Dynamics 365,1
+QlikView,1
+JaamSim Pro,1
+Anylogic,1
+Arena,1
+ExtendSim,1
+MLOps tooling,1
+Azure Kubernetes Service (AKS),1
+Amazon Redshift,1
+Tableau optimization,1
+Power BI optimization,1
+marketplace patterns,1
+Azure App Service,1
+Azure Function App,1
+Azure AD B2C,1
+Svelte,1
+Entity Framework,1
+Alternative ORM,1
+Make.com,1
+n8n,1
+HubSpot,1
+LMS,1
+CMS,1
+Stripe,1
+Google Workspace,1
+Airtable,1
+Monday.com,1
+Process Street,1
+internal forms,1

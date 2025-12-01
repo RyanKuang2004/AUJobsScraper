@@ -9,6 +9,8 @@ from jobly.utils.scraper_utils import (
     remove_html_tags,
     calculate_posted_date,
     determine_seniority,
+    extract_job_role,
+    normalize_locations,
 )
 
 class SeekScraper(BaseScraper):
@@ -110,7 +112,9 @@ class SeekScraper(BaseScraper):
             
             # Extract Title
             title_elem = job_soup.find("h1", attrs={"data-automation": "job-detail-title"})
-            title = title_elem.text.strip() if title_elem else "Unknown Title"
+            raw_title = title_elem.text.strip() if title_elem else "Unknown Title"
+            # Clean the title using extract_job_role to remove noise
+            title = extract_job_role(raw_title)
             
             # Extract Company
             company_elem = job_soup.find("span", attrs={"data-automation": "advertiser-name"})
@@ -118,7 +122,10 @@ class SeekScraper(BaseScraper):
             
             # Extract Location
             location_elem = job_soup.find("span", attrs={"data-automation": "job-detail-location"})
-            location = location_elem.text.strip() if location_elem else "Australia"
+            location_str = location_elem.text.strip() if location_elem else "Australia"
+            
+            # Normalize locations to structured format
+            locations = normalize_locations([location_str])
             
             # Extract Salary
             salary_elem = job_soup.find("span", attrs={"data-automation": "job-detail-salary"})
@@ -129,8 +136,8 @@ class SeekScraper(BaseScraper):
             raw_content = str(description_elem) if description_elem else str(job_soup.find("body"))
             description = remove_html_tags(raw_content)
 
-            # Extract seniority level (Junior, Senior, Intermediate)
-            seniority = determine_seniority(title)
+            # Extract seniority level from RAW title (before cleaning removes seniority keywords)
+            seniority = determine_seniority(raw_title)
 
             # Extract posted_at
             posted_at = None
@@ -147,9 +154,10 @@ class SeekScraper(BaseScraper):
             llm_analysis = None
 
             job_data = {
-                "job_title": title,
+                "job_title": title,  # Cleaned title for display
+                "raw_job_title": raw_title,  # Original title for fingerprint generation
                 "company": company,
-                "locations": [location],
+                "locations": locations,
                 "source_urls": [job_url],
                 "description": description,
                 "salary": salary,

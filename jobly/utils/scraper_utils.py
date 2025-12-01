@@ -105,87 +105,160 @@ def _normalize_engineering_word(phrase: str) -> str:
     phrase = re.sub(r'\s+', ' ', phrase).strip()
     return phrase
 
-def extract_job_role(title: str) -> str:
+# Lazy load OpenAI embeddings to avoid startup cost
+_embedding_model = None
+_role_embeddings = None
+
+# Job role taxonomy mapping standard roles to keywords
+ROLE_TAXONOMY = {
+    # Software Engineering & Development
+    "Software Engineer": ["software engineer", "developer", "programmer", "backend", "frontend", "application engineer", "app engineer"],
+    "Full Stack Developer": ["full stack", "fullstack", "javascript full stack", "typescript full stack"],
+    "Web Developer": ["web developer", "react developer", "angular developer", "vue developer", "php developer", "website designer", "frontend developer"],
+    "Mobile Developer": ["mobile developer", "ios developer", "android developer", "react native", "mobile app developer", "flutter"],
+    "Embedded Systems Engineer": ["embedded systems", "firmware engineer", "embedded software", "embedded engineer"],
+    "Game Developer": ["game developer", "game software engineer", "unity developer", "game engineer"],
+    
+    # Data & Analytics
+    "Data Engineer": ["data engineer", "big data", "etl developer", "azure data engineer", "data pipeline"],
+    "Data Scientist": ["data scientist", "applied scientist", "spatial data scientist"],
+    "Data Analyst": ["data analyst", "reporting analyst", "insights analyst", "commercial analyst"],
+    "Business Intelligence Analyst": ["business intelligence", "bi analyst", "bi developer", "power bi", "tableau", "analytics"],
+    "Data Architect": ["data architect", "data modeler", "database architect"],
+    "Database Administrator": ["database administrator", "database developer", "sql developer", "dba"],
+    
+    # AI & ML
+    "AI Engineer": ["ai engineer", "ai software engineer", "generative ai", "ai devops", "artificial intelligence"],
+    "Machine Learning Engineer": ["machine learning engineer", "ml engineer", "mlops", "deep learning engineer"],
+    "Research Scientist": ["research scientist", "computer scientist", "research fellow", "computational science", "research assistant"],
+    "NLP Engineer": ["nlp engineer", "natural language processing", "conversational ai", "prompt engineer"],
+    
+    # Infrastructure, Cloud & DevOps
+    "DevOps Engineer": ["devops engineer", "site reliability engineer", "sre", "ci/cd engineer", "devsecops"],
+    "Cloud Engineer": ["cloud engineer", "azure engineer", "aws engineer", "cloud architect", "solutions engineer", "gcp engineer"],
+    "Platform Engineer": ["platform engineer", "infrastructure engineer", "systems engineer"],
+    "Systems Administrator": ["systems administrator", "it support", "application support", "service desk", "sysadmin"],
+    
+    # Management & Strategy
+    "Engineering Manager": ["engineering manager", "head of engineering", "development manager", "team lead", "cto", "chief technology officer"],
+    "Product Manager": ["product manager", "product owner", "digital product manager"],
+    "Business Analyst": ["business analyst", "technical business analyst", "process analyst"],
+    "Solutions Architect": ["solutions architect", "enterprise architect", "technical architect", "solution architect"],
+    
+    # QA & Testing
+    "QA Engineer": ["qa engineer", "test engineer", "software tester", "automation engineer", "quality assurance", "test automation"],
+    
+    # Security
+    "Cyber Security Engineer": ["cyber security", "security analyst", "infosec", "detection engineer", "security engineer", "cybersecurity"],
+    
+    # Specialized/Niche
+    "Quantitative Analyst": ["quantitative analyst", "quant", "actuary", "algorithmic trader"],
+    "GIS Analyst": ["gis analyst", "gis", "spatial analyst", "geospatial"],
+    "Technical Writer": ["technical writer", "documentation engineer"],
+    "Sales Engineer": ["sales engineer", "field application engineer", "presales engineer"],
+}
+
+
+def _get_embedding_model():
+    """Lazy load the OpenAI embeddings model."""
+    global _embedding_model, _role_embeddings
+    if _embedding_model is None:
+        from langchain_openai import OpenAIEmbeddings
+        _embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
+        # Pre-compute embeddings for all standard roles
+        _role_embeddings = _embedding_model.embed_documents(list(ROLE_TAXONOMY.keys()))
+    return _embedding_model, _role_embeddings
+
+
+def extract_job_role(title: str, company_name: str = None, similarity_threshold: float = 0.5) -> str:
     """
-    Fast role extractor:
-      1) clean the raw text
-      2) try regex expansion around known ROLE_SUFFIXES (longest-first)
-      3) choose longest/specific candidate
-      4) fallback to spaCy noun chunks
-    Returns title-cased role or cleaned text if nothing found.
+    Classify job title into standardized roles using hybrid approach:
+    1. Clean the title (remove company name, seniority terms, noise)
+    2. Try keyword matching against taxonomy
+    3. Fall back to embedding similarity if no keyword match
+    4. Return "Specialized" if similarity is below threshold
+    
+    Args:
+        title: Raw job title
+        company_name: Optional company name to remove from title
+        similarity_threshold: Minimum similarity score for embedding match (default 0.4)
+        
+    Returns:
+        Standardized job role name or "Specialized"
     """
-    raw = title or ""
-    text = _clean_text(raw)
-    text = _collapse_repeated_subphrases(text)
+    if not title:
+        return "Specialized"
+    
+    # Step 1: Clean the title
+    cleaned = title.lower()
+    
+    # Remove company name if provided
+    if company_name:
+        cleaned = re.sub(rf'\b{re.escape(company_name.lower())}\b', ' ', cleaned)
+    
+    # Remove parentheses and content
+    cleaned = re.sub(r'\([^)]*\)', ' ', cleaned)
+    
+    # Remove year ranges and single years
+    cleaned = re.sub(r'\b20\d{2}(?:[\s/-]*\d{2,4})?\b', ' ', cleaned)
+    
+    # Remove seniority and noise words
+    for word in STOP_WORDS:
+        cleaned = re.sub(rf'\b{re.escape(word)}\b', ' ', cleaned)
+    
+    # Normalize whitespace
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    
+    if not cleaned:
+        return "Specialized"
+    
+    # Step 2: Keyword matching (longest/most specific first)
+    best_match = None
+    best_match_length = 0
+    
+    for role, keywords in ROLE_TAXONOMY.items():
+        for keyword in keywords:
+            if keyword in cleaned:
+                # Prefer longer, more specific matches
+                if len(keyword) > best_match_length:
+                    best_match = role
+                    best_match_length = len(keyword)
+    
+    if best_match:
+        return best_match
+    
+    # Step 3: Embedding fallback
+    try:
+        model, role_embeddings = _get_embedding_model()
+        
+        # Encode the cleaned title
+        title_embedding = model.embed_query(cleaned)
+        
+        # Compute cosine similarity with all standard roles using numpy
+        import numpy as np
+        
+        # Normalize vectors for cosine similarity
+        title_norm = np.array(title_embedding) / np.linalg.norm(title_embedding)
+        
+        similarities = []
+        for role_emb in role_embeddings:
+            role_norm = np.array(role_emb) / np.linalg.norm(role_emb)
+            similarity = np.dot(title_norm, role_norm)
+            similarities.append(similarity)
+        
+        # Find best match
+        max_sim_idx = np.argmax(similarities)
+        max_similarity = similarities[max_sim_idx]
+        
+        if max_similarity >= similarity_threshold:
+            return list(ROLE_TAXONOMY.keys())[max_sim_idx]
+        else:
+            return "Specialized"
+            
+    except Exception as e:
+        # If embedding fails, return Specialized
+        return "Specialized"
 
-    candidates = []
-
-    # For each suffix try to find occurrences and expand left up to 4 words
-    for suffix in ROLE_SUFFIXES:
-        # find all occurrences of the suffix
-        for m in re.finditer(re.escape(suffix), text):
-            start = m.start()
-            # expand left to capture up to 4 words before the suffix (to get modifiers)
-            left = text[:start].rstrip()
-            # take last up to 4 words from left
-            left_words = re.findall(r'\b[\w&/+-]+\b', left)
-            if left_words:
-                # Filter out likely company names (short acronyms) and location words
-                filtered_words = []
-                for word in left_words[-4:]:
-                    # Skip single letters, short acronyms (2-4 chars, all same case)
-                    if len(word) <= 4 and (word.isupper() or word.islower()) and word.isalpha():
-                        # Likely a company acronym or short word, skip unless it's part of role
-                        # Keep common role modifiers like "ai", "ml", "qa", "it"
-                        if word.lower() not in {'ai', 'ml', 'qa', 'it', 'ui', 'ux', 'bi', 'ci', 'cd'}:
-                            continue
-                    filtered_words.append(word)
-                
-                if filtered_words:
-                    prefix = " ".join(filtered_words)
-                    candidate = (prefix + " " + suffix).strip()
-                else:
-                    candidate = suffix
-            else:
-                candidate = suffix
-            # cleanup candidate
-            candidate = re.sub(r'\s+', ' ', candidate).strip()
-            candidate = _normalize_engineering_word(candidate)
-            # discard garbage candidates that are too short/generic like just "engineering"
-            if candidate.lower() in {"engineering", ""}:
-                continue
-            candidates.append(candidate)
-
-    # If we found any candidates, pick the longest (most specific), then title-case
-    if candidates:
-        best = max(candidates, key=lambda s: len(s))
-        return best.title()
-
-    # fallback: use spaCy noun chunks but filter to chunks that contain a role-like suffix
-    doc = nlp(text)
-    chunk_candidates = []
-    for chunk in doc.noun_chunks:
-        c = chunk.text.strip()
-        # discard overly generic single words like "engineering"
-        if c.lower() in {"engineering", ""}:
-            continue
-        # choose chunks containing any role suffix or any of the suffix words
-        if any(suf in c.lower() for suf in ROLE_SUFFIXES):
-            c = _normalize_engineering_word(c)
-            chunk_candidates.append(c)
-
-    if chunk_candidates:
-        best = max(chunk_candidates, key=lambda s: len(s))
-        return best.title()
-
-    # final fallback: last meaningful token(s)
-    tokens = [t.text for t in doc if not t.is_stop and t.is_alpha]
-    if tokens:
-        out = " ".join(tokens[-3:]).title()
-        return out
-
-    # as last resort return cleaned, title-cased original
-    return _normalize_engineering_word(text).title()
 
 def remove_html_tags(content: str) -> str:
     """
@@ -326,4 +399,182 @@ def determine_seniority(title: str) -> str:
                 return level
 
     return "N/A"
+
+
+def normalize_locations(locations: list[str]) -> list[dict[str, str]]:
+    """
+    Normalize location strings into structured city/state dictionaries.
+    
+    Converts location strings into structured format with Australian city-to-state mapping.
+    Filters out states, regions, and suburbs to return only main cities.
+    
+    Examples:
+    - "Fortitude Valley, Brisbane QLD" -> {"city": "Brisbane", "state": "QLD"}
+    - "Sydney" -> {"city": "Sydney", "state": "NSW"}
+    - "Melbourne CBD and Inner Suburbs" -> {"city": "Melbourne", "state": "VIC"}
+    - "New South Wales" -> (filtered out, not a city)
+    
+    Args:
+        locations: List of location strings to normalize
+        
+    Returns:
+        List of dictionaries with "city" and "state" keys, containing only valid cities
+    """
+    if not locations:
+        return []
+    
+    # Comprehensive Australian city-to-state mapping (major cities and regional centers)
+    CITY_TO_STATE = {
+        # New South Wales
+        'sydney': 'NSW', 'newcastle': 'NSW', 'wollongong': 'NSW', 'central coast': 'NSW',
+        'maitland': 'NSW', 'wagga wagga': 'NSW', 'albury': 'NSW', 'port macquarie': 'NSW',
+        'tamworth': 'NSW', 'orange': 'NSW', 'dubbo': 'NSW', 'bathurst': 'NSW',
+        'lismore': 'NSW', 'nowra': 'NSW', 'north sydney': 'NSW', 'parramatta': 'NSW',
+        
+        # Victoria
+        'melbourne': 'VIC', 'geelong': 'VIC', 'ballarat': 'VIC', 'bendigo': 'VIC',
+        'shepparton': 'VIC', 'mildura': 'VIC', 'warrnambool': 'VIC', 'wodonga': 'VIC',
+        'traralgon': 'VIC', 'horsham': 'VIC',
+        
+        # Queensland
+        'brisbane': 'QLD', 'gold coast': 'QLD', 'sunshine coast': 'QLD', 'townsville': 'QLD',
+        'cairns': 'QLD', 'toowoomba': 'QLD', 'mackay': 'QLD', 'rockhampton': 'QLD',
+        'bundaberg': 'QLD', 'hervey bay': 'QLD', 'gladstone': 'QLD', 'ipswich': 'QLD',
+        
+        # South Australia
+        'adelaide': 'SA', 'mount gambier': 'SA', 'whyalla': 'SA', 'port lincoln': 'SA',
+        'port augusta': 'SA', 'murray bridge': 'SA',
+        
+        # Western Australia
+        'perth': 'WA', 'mandurah': 'WA', 'bunbury': 'WA', 'geraldton': 'WA',
+        'albany': 'WA', 'kalgoorlie': 'WA', 'busselton': 'WA', 'rockingham': 'WA',
+        
+        # Tasmania
+        'hobart': 'TAS', 'launceston': 'TAS', 'devonport': 'TAS', 'burnie': 'TAS',
+        
+        # Northern Territory
+        'darwin': 'NT', 'alice springs': 'NT', 'palmerston': 'NT',
+        
+        # Australian Capital Territory
+        'canberra': 'ACT',
+    }
+    
+    # State/territory full names to filter out
+    STATE_NAMES = {
+        'new south wales', 'nsw', 'victoria', 'vic', 'queensland', 'qld',
+        'south australia', 'sa', 'western australia', 'wa', 'tasmania', 'tas',
+        'northern territory', 'nt', 'australian capital territory', 'act', 'australia', 'au'
+    }
+    
+    # Common non-city descriptors to filter out
+    NON_CITY_PATTERNS = [
+        r'cbd and inner suburbs',
+        r'inner suburbs',
+        r'western suburbs',
+        r'eastern suburbs',
+        r'northern suburbs',
+        r'southern suburbs',
+        r'metro',
+        r'metropolitan',
+        r'region',
+        r'area',
+        r'greater\s+\w+',
+    ]
+    
+    # Australian state/territory abbreviations
+    states = ['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT']
+    state_pattern = '|'.join(states)
+    
+    normalized = []
+    
+    for location in locations:
+        if not location or not isinstance(location, str):
+            continue
+            
+        # Clean the location string
+        location = location.strip()
+        location_lower = location.lower()
+        
+        # Skip if it's a state name
+        if location_lower in STATE_NAMES:
+            continue
+        
+        # Skip if it matches non-city patterns
+        skip = False
+        for pattern in NON_CITY_PATTERNS:
+            if re.search(pattern, location_lower):
+                skip = True
+                break
+        if skip:
+            continue
+        
+        city = None
+        state = None
+        
+        # Try to extract state abbreviation from the location string
+        state_match = re.search(rf'\b({state_pattern})\b', location, re.IGNORECASE)
+        
+        if state_match:
+            state = state_match.group(1).upper()
+            
+            # Extract city name - look for the main city before the state
+            # Pattern: "Suburb, City STATE" or "City STATE"
+            location_before_state = location[:state_match.start()].strip()
+            
+            # Remove trailing comma if present
+            location_before_state = location_before_state.rstrip(',').strip()
+            
+            # If there's a comma, take the part after the last comma (the main city)
+            # e.g., "Fortitude Valley, Brisbane" -> "Brisbane"
+            if ',' in location_before_state:
+                parts = [p.strip() for p in location_before_state.split(',')]
+                # Take the last part as the main city
+                city_candidate = parts[-1]
+            else:
+                # No comma, the whole string before state is the city
+                city_candidate = location_before_state
+            
+            # Verify this is actually a known city
+            if city_candidate.lower() in CITY_TO_STATE:
+                city = city_candidate.title()
+            else:
+                # Not in our known cities, skip this location
+                continue
+        else:
+            # No state abbreviation found, try to identify city from the string
+            # Remove common prefixes and check if it's a known city
+            
+            # First, try to extract city from comma-separated parts
+            if ',' in location:
+                parts = [p.strip() for p in location.split(',')]
+                # Try each part to see if it's a known city
+                for part in reversed(parts):  # Start from the end
+                    if part.lower() in CITY_TO_STATE:
+                        city = part.title()
+                        state = CITY_TO_STATE[part.lower()]
+                        break
+            else:
+                # Check if the whole location is a known city
+                if location_lower in CITY_TO_STATE:
+                    city = location.title()
+                    state = CITY_TO_STATE[location_lower]
+        
+        # Only add valid city entries
+        if city and state:
+            normalized.append({
+                "city": city,
+                "state": state
+            })
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_normalized = []
+    for loc in normalized:
+        # Create a tuple for hashability
+        loc_tuple = (loc.get("city"), loc.get("state"))
+        if loc_tuple not in seen:
+            seen.add(loc_tuple)
+            unique_normalized.append(loc)
+    
+    return unique_normalized
 

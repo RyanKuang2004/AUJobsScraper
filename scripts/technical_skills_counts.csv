@@ -1,0 +1,1426 @@
+Technical Skill,Count
+Python,119
+SQL,60
+JavaScript,38
+Java,27
+C#,27
+C++,24
+AWS,23
+React,20
+TypeScript,17
+R,15
+machine learning,15
+Azure,14
+data governance,12
+C,12
+Node.js,12
+CSS,11
+data analysis,11
+Docker,11
+data modelling,10
+NLP,10
+TensorFlow,10
+PyTorch,10
+data pipelines,10
+HTML,10
+PostgreSQL,10
+APIs,9
+Terraform,9
+Linux,9
+RESTful APIs,9
+GCP,9
+Generative AI,8
+data integration,8
+Git,8
+security,8
+data modeling,8
+LLMs,8
+CI/CD pipelines,8
+CI/CD,8
+Machine Learning,7
+Spark,7
+AI,7
+GraphQL,7
+Large Language Models (LLMs),6
+Angular,6
+statistics,6
+.NET,6
+MySQL,6
+NoSQL,6
+distributed systems,6
+DevSecOps,6
+Power BI,6
+scikit-learn,5
+monitoring,5
+Databricks,5
+prompt engineering,5
+Rust,5
+PowerShell,5
+MLOps,5
+computer vision,5
+REST APIs,5
+microservices,5
+SQL Server,5
+data transformation,5
+Kubernetes,5
+Node,5
+data warehousing,4
+data cleansing,4
+feature engineering,4
+data security,4
+PySpark,4
+Deep learning,4
+Pandas,4
+Excel,4
+dashboards,4
+ETL pipelines,4
+Microsoft Azure,4
+Django,4
+DevOps,4
+Machine learning,4
+statistical analysis,4
+Bash,4
+Microsoft Fabric,4
+data management,4
+Data modelling,4
+data analytics,4
+statistical modelling,4
+data manipulation,3
+model validation,3
+Azure Data Factory,3
+large language models,3
+LangChain,3
+LangGraph,3
+Python programming,3
+Observability,3
+linear algebra,3
+API integration,3
+mathematics,3
+A/B testing,3
+model evaluation,3
+data collection,3
+RAG,3
+governance,3
+DevOps practices,3
+Go,3
+PHP,3
+Agile,3
+HTML5,3
+OAuth,3
+Vue.js,3
+MongoDB,3
+REST,3
+OCR,3
+ETL/ELT,3
+data marts,3
+Deep Learning,3
+Transformers,3
+Debugging,3
+analytics,3
+deep learning,3
+RBAC,3
+Teradata,3
+deep learning techniques,3
+cloud-native development,3
+CI/CD practices,3
+predictive modelling,3
+data quality,3
+reporting,3
+LLM fine-tuning,3
+Golang,3
+Oracle,3
+XML,3
+software development,3
+Typescript,3
+Event Driven Architecture,3
+IaC,3
+data lineage,3
+data engineering,3
+automation,3
+cloud environments,3
+scripting,3
+Artificial intelligence (AI),2
+LLM,2
+Computer Vision,2
+model lifecycle management,2
+AI governance,2
+risk assessment,2
+privacy,2
+MLflow,2
+containerisation,2
+LlamaIndex,2
+Computer vision,2
+Natural Language Processing (NLP),2
+Keras,2
+spaCy,2
+NumPy,2
+Google Cloud Platform (GCP),2
+predictive modeling,2
+customer segmentation,2
+NodeJS,2
+Windows,2
+database design,2
+DAX,2
+Azure Synapse,2
+medallion architecture,2
+data wrangling,2
+data visualisation,2
+Agile methodologies,2
+Vue,2
+JWT,2
+microservices architecture,2
+Relational databases,2
+C/C++,2
+CQRS,2
+SCSS,2
+.Net Core,2
+AI/ML concepts,2
+data privacy,2
+autonomous agents,2
+Retrieval-Augmented Generation (RAG),2
+FastAPI,2
+Hugging Face,2
+OpenAI,2
+event-driven architecture,2
+semantic layers,2
+multi-modal AI,2
+XGBoost,2
+CNN,2
+Scala,2
+React Native,2
+data visualization,2
+time series data,2
+experimental design,2
+drift detection,2
+C#.NET,2
+Azure DevOps,2
+Windows Server,2
+Advanced SQL,2
+segmentation,2
+data warehouses,2
+Cybersecurity,2
+databases,2
+cloud infrastructure,2
+infrastructure-as-code,2
+secure coding practices,2
+REST API development,2
+Databases,2
+Scripting,2
+time-series forecasting,2
+data processing,2
+AI models,2
+data preprocessing,2
+advanced analytics,2
+forecasting,2
+Generative AI tools,2
+TCP/IP,2
+Embedded systems,2
+encryption,2
+Infrastructure as Code (IaC),2
+GitHub,2
+IoT,2
+quantitative analysis,2
+qualitative analysis,2
+GenAI,2
+data science,2
+data governance frameworks,2
+Kubeflow,2
+Ansible,2
+Predictive modelling,2
+observability,2
+performance tuning,2
+data profiling,2
+system software,2
+telemetry services,2
+storage protocols,2
+networking concepts,2
+scheduling,2
+VB.NET,2
+ASP.NET,2
+debugging,2
+testing,2
+version control,2
+Database design,2
+Laravel,2
+modelling,2
+optimisation,2
+Dataverse,2
+Fabric Lakehouse/Warehouse,2
+ERDs,2
+artificial intelligence,2
+SageMaker,2
+Bedrock,2
+S3,2
+IAM,2
+CloudFormation,2
+GenAI tooling,2
+threat hunting,2
+full-stack development,2
+infrastructure as code,2
+automated testing,2
+Web Services,2
+stored procedures,2
+system architecture,2
+jQuery,2
+Angular 12+,2
+metadata management,2
+Next.js,2
+numpy,2
+data ingestion,2
+Distributed systems,2
+Artificial Intelligence,2
+Statistical analysis,2
+Machine learning (ML),1
+Data analysis,1
+Data storage,1
+Data publication,1
+Cloud computing solutions,1
+Research platforms and tools,1
+SQL programming,1
+data integration principles,1
+CNNs,1
+Supervised learning,1
+Model evaluation,1
+data quality assurance,1
+data integrity,1
+AI/ML model development,1
+integration of AI models into existing platforms,1
+versioning,1
+retraining,1
+explainable AI,1
+"compliance (HIPAA, GDPR, Australian data privacy regulations)",1
+Azure-based architecture,1
+Azure ML,1
+Databricks ML,1
+serverless compute environments,1
+generative AI integration,1
+hosting LLMs securely on Azure,1
+production deployment of ML models,1
+CI/CD best practices,1
+reliability,1
+Generative AI concepts,1
+Prototype application development,1
+Prompt engineering,1
+Retrieval-augmented generation (RAG),1
+Design and safety guardrails,1
+Semantic Kernel,1
+AutoGen,1
+OpenAI Responses API,1
+AWS cloud deployment,1
+AI Prompt,1
+AI Agents,1
+Natural language processing,1
+Reinforcement learning,1
+"Machine learning algorithms (regression, classification, clustering, deep learning, NLP, computer vision)",1
+NLTK,1
+Transformers library,1
+Infrastructure-as-code (IaC),1
+Serverless Framework,1
+AWS's Well-Architected framework,1
+Linux/Unix infrastructure,1
+"multi-cloud environment (AWS, GCP)",1
+Expert-level knowledge of at least one scripting language (Python/Node),1
+Data Vault,1
+platform design,1
+Python or similar tools,1
+statistical modelling techniques,1
+self-serve reports and dashboards,1
+advanced data analysis,1
+data handling,1
+REACT,1
+RESTful API design and implementation,1
+Relational Database design and Queries,1
+Database design and data management,1
+server-side logic using APIs,1
+"Experience designing and managing SQL database - MySQL, MSSQL or other relational database experience.",1
+"Solid experience in most of the core web development technologies including Angular, VUE.JS, Firebase, NodeJS, Javascript/Typescript, and HTML/CSS is required.",1
+"Experience building RESTful APIs with NodeJS, Typescript, NestJS.",1
+"Experience using automated build and deployment systems such as GitHub, BitBucket.",1
+Experience in other framework or language is welcomed.,1
+A minimum of 1-2 years of software development experience is required for this position.,1
+quantum algorithms,1
+quantum information,1
+complexity theory,1
+Julia,1
+privacy-preserving data linkage,1
+FHIR,1
+ISO27001,1
+Azure Fabric,1
+Python programming (advantageous),1
+data definition,1
+data mesh,1
+integration patterns,1
+streaming architectures,1
+lakehouse design,1
+cloud migrations,1
+hybrid data ecosystems,1
+cloud-native data platforms,1
+"compliance requirements (PCI DSS, APRA CPS 234, CPG 235)",1
+hypothesis generation,1
+experimentation,1
+model development,1
+POC design,1
+A/B tests,1
+event instrumentation,1
+trend analysis,1
+data-informed decision-making,1
+analytical techniques,1
+ETL,1
+ML models,1
+agents,1
+audit,1
+security-by-design principles,1
+prompt protections,1
+data minimisation,1
+content filtering,1
+robust access controls,1
+Natural/Adabas,1
+JCL,1
+COBOL,1
+structured programming,1
+system architecture principles,1
+cloud-based systems,1
+Visual Objects (VO),1
+MS SQL,1
+Azure-cloud,1
+database design principles,1
+web engineering at scale,1
+command-line tooling,1
+C# (.NET),1
+Content Security Policy (CSP),1
+Webpack,1
+Babel,1
+Strapi,1
+ESLint,1
+Ruby,1
+web performance optimisation,1
+accessibility standards,1
+computer network engineering,1
+statistics and data science,1
+electrical and energy management systems,1
+Agile development methodologies,1
+Modern TypeScript development,1
+NoSQL databases,1
+Security best practices,1
+graph data models,1
+search technologies,1
+embeddings,1
+approximate nearest neighbor indexes,1
+TF-IDF scoring,1
+semantic search,1
+keyword search pipelines,1
+machine learning concepts and algorithms,1
+machine learning/LLM concepts and algorithms,1
+static code analysis tools,1
+dynamic code analysis tools,1
+language servers,1
+compiler internals,1
+.NET Core / .NET 6+,1
+Entity Framework Core,1
+RESTful API development and integration,1
+Clean Architecture,1
+Dependency Injection,1
+Blazor,1
+CSS3,1
+Bootstrap,1
+SignalR,1
+gRPC,1
+WebSockets,1
+xUnit,1
+bUnit,1
+.NET / C# backend development,1
+Integrations,1
+Azure cloud,1
+CI/CD automation,1
+Security,1
+Maintainability,1
+ethical AI governance and risk mitigation frameworks,1
+Asp.Net,1
+Microservices architecture,1
+RESTful API design patterns,1
+API design,1
+Security techniques for APIs and microservices,1
+low-code prototyping,1
+AIOps / MLOps / LLMOp,1
+ethical AI,1
+"research, analysis and interpretation of data and information",1
+data and analytics,1
+graphical representation,1
+contextual narratives,1
+workflow automation,1
+agent-based intelligence,1
+LLM-driven systems,1
+traditional ML methods,1
+generative AI approaches,1
+orchestration,1
+agent-based workflows,1
+CrewAI,1
+LLMOps,1
+GPT APIs,1
+ELT/ETL patterns,1
+data modelling principles,1
+metadata and lineage practices,1
+real-time data ingestion,1
+GenAI readiness / AI-enabled data foundations,1
+analytical feature store,1
+APIs wrapped data services,1
+audio processing,1
+speech recognition,1
+LLM testing,1
+voice AI systems,1
+chatbot evaluation frameworks,1
+.NET 8+ and C#,1
+"distributed systems concepts (caching, rate limiting, circuit breakers, retries, observability)",1
+embeddings for semantic search,1
+"LLM integration (Azure OpenAI, OpenAI, Anthropic)",1
+"prompts, system messages, and tool-calling strategies for agentic workflows",1
+Microsoft AI framework (Semantic Kernel or Agent Framework),1
+"Elasticsearch (keyword and vector-based queries, multilingual capabilities, performance tuning)",1
+VLMs,1
+Recommender Systems,1
+Collaborative Filtering,1
+Content-Based,1
+Hybrid,1
+Matrix Factorization,1
+Learning to Rank,1
+HF models,1
+LightGBM,1
+Scikit-learn,1
+real-time ML,1
+Agentic RAG,1
+Deep Learning techniques,1
+Generative AI (language-based),1
+NN,1
+RNN,1
+traditional computer vision techniques,1
+image processing techniques,1
+numerical processing,1
+LR,1
+GBDT,1
+DNN,1
+Uplift Model,1
+Lookalike,1
+Hadoop,1
+Flink,1
+data cleaning,1
+model tuning,1
+natural language understanding (NLU),1
+sentiment analysis,1
+intent recognition,1
+named-entity recognition,1
+time-series analysis,1
+probability,1
+exploratory data analysis,1
+backtesting,1
+.NET (Core 6+),1
+async programming,1
+distributed system concepts,1
+JWT and Identity (security for web APIs and cloud apps),1
+"Caching concepts (Redis, MemoryCache)",1
+Unit testing,1
+Integration testing,1
+Automated tests,1
+"Networking concepts (TCP/IP, UDP, DHCP, DNS, NAT, VPNs, firewalls)",1
+Performance optimization,1
+AI/ML/NLP,1
+GenAI / LLMs,1
+Platform Integration experience,1
+information extraction,1
+semantic similarity,1
+"machine learning (classification, ranking, and recommendation)",1
+Large language models,1
+Production-scale systems,1
+data transformation pipelines,1
+AWS S3,1
+AWS EC2,1
+AWS EMR,1
+Ruby on Rails,1
+"scalable, secure systems architecture",1
+third-party system integrations,1
+software design principles,1
+Basic understanding of cloud services (AWS preferred),1
+data and application security knowledge,1
+object detection,1
+end-to-end ML model development,1
+ranking algorithms,1
+personalisation frameworks,1
+model evaluation techniques,1
+model retraining,1
+ASP.NET Core,1
+MVC,1
+Web API development,1
+T-SQL,1
+Xamarin Forms,1
+RESTful API design,1
+AI tools,1
+SQL Server Reporting Services (SSRS),1
+IIS,1
+iOS device management and MDM,1
+Apache,1
+Geospatial data tools,1
+mapping APIs,1
+MDM platforms,1
+machine learning models,1
+statistical methods,1
+computational methods,1
+Postgres,1
+Uptime monitoring,1
+AI usage proficiency,1
+control groups,1
+propensity models,1
+statistical modeling,1
+ML/AI techniques,1
+software design and development,1
+web and mobile applications,1
+database systems,1
+cloud computing (AWS or Azure),1
+data security measures,1
+technical documentation,1
+Mobile app development,1
+Software architecture,1
+Version control,1
+integration testing,1
+defect management,1
+traceability,1
+CI/CD toolsets,1
+Java (or JVM languages),1
+streaming APIs,1
+security best practices,1
+containerization,1
+AI/ML modelling,1
+NLP (natural language processing),1
+graph-based modelling,1
+data engineering principles,1
+data governance standards,1
+Full-stack development,1
+Test automation,1
+Cloud design for high-transaction throughput,1
+Algorithms,1
+Object-oriented design,1
+Functional design principles,1
+reinforcement learning,1
+survival analysis,1
+statistical inference,1
+causal modeling,1
+face anti-spoofing,1
+biometrics,1
+3D/2.5D vision,1
+facial landmark/pose estimation,1
+foundation models,1
+data-efficient algorithms,1
+federated learning,1
+production backend development,1
+machine learning / deep learning,1
+software engineering,1
+generative AI techniques,1
+document understanding/analysis,1
+"AI pipelines (data collection, evaluation, deployment, monitoring)",1
+intelligent search systems,1
+anomaly detection algorithms,1
+AI production systems,1
+active use of modern AI tools,1
+data curation,1
+data modelling techniques,1
+machine learning frameworks,1
+privacy and security principles,1
+Customer Data Platforms,1
+data mining,1
+data lakes,1
+analyse complex data sets,1
+deliver insights,1
+data validation,1
+visualisations,1
+gathering reporting requirements,1
+business intelligence solutions,1
+AWS SageMaker,1
+Azure AI,1
+Google Vertex AI,1
+Express,1
+multiple programming languages,1
+UI/UX design,1
+LLM-based text extraction,1
+back-end web development,1
+Azure Synapse Analytics,1
+Azure SQL Database,1
+Azure Databricks,1
+Azure Cosmos DB,1
+Azure Purview,1
+Azure Machine Learning,1
+Cognitive Services,1
+"ETL/ELT pipelines using ADF, Spark, and SQL",1
+role-based access control,1
+compliance frameworks,1
+Bicep,1
+ARM templates,1
+.NET 9,1
+Azure Cloud Services,1
+AI/ML technologies,1
+Delphi,1
+JavaScript (React),1
+SQL database,1
+cloud platforms,1
+real-time monitoring,1
+C/C++ (embedded and unmanaged environments),1
+embedded Linux on ARM-based processors,1
+image signal processing,1
+device drivers for embedded systems,1
+embedded software development,1
+traditional ML,1
+Gen AI,1
+ETL processes,1
+SailPoint IdentityIQ (IIQ),1
+Core Java development,1
+"custom IIQ rules, tasks, workflows",1
+IGA,1
+SoD,1
+Role engineering,1
+Access governance,1
+interpret and visualise data to extract meaningful insights,1
+Full-stack engineering,1
+LLM and agent frameworks,1
+AI engineering,1
+architecting end-to-end machine learning systems,1
+architect AI systems,1
+"integrating models, workflows, and APIs",1
+AI readiness consulting engagements,1
+orchestration systems,1
+Infrastructure as Code,1
+GitOps,1
+"LLM architectures (e.g., RAG, vector databases)",1
+compliance,1
+designing AI/ML solutions,1
+deploying AI/ML solutions in production environments,1
+"design, development and deployment of AI solutions",1
+IT architecture,1
+"secure, scalable AI systems",1
+cloud engineering,1
+version control (open-source packages),1
+"CI/CD tools (Jenkins, GitHub Actions, GitLab)",1
+Automation frameworks,1
+Google Cloud,1
+adversarial attacks,1
+model poisoning,1
+security compliance frameworks,1
+Demand forecasting,1
+Data science lifecycle,1
+AI tools usage,1
+API design & development,1
+TS,1
+LLM inference,1
+RAG pipelines,1
+eval systems,1
+agent tooling,1
+vector DBs,1
+LLM serving,1
+prompting,1
+tracing,1
+quantitative modelling,1
+stochastic modelling,1
+applied quantitative logic,1
+variance analysis,1
+corrective action planning,1
+FinOps or cloud cost management,1
+Teradata MPP Platform,1
+backend data processing,1
+ETL principles,1
+IBM InfoSphere DataStage,1
+Teradata database administration,1
+SAS,1
+Data modelling (relational and dimensional like star schema and Snowflake schema),1
+EDW design and implementation,1
+ETL / ELT processes design and implementation,1
+"Performance tuning, query plan analysis, indexing, table partitioning",1
+Data profiling and integration recommendations,1
+Agile delivery methodology familiarity,1
+Azure SQL data platform,1
+Databricks architecture and features,1
+Snowflake architecture and features,1
+"Data ingestion options (Apache Kafka, Informatica, AWS Glue, Azure Event Hubs, Fivetran, Matillion, DBT, Coalesce)",1
+Apache Airflow,1
+Wherescape RED,1
+Wherescape 3D,1
+SSIS,1
+SSRS,1
+SSAS,1
+SQL Server technologies,1
+AI initiatives,1
+ERP projects,1
+data and financial analysis tools,1
+AI/ML delivery,1
+IT lifecycle,1
+ETL testing,1
+data migration testing,1
+data mapping,1
+DB2,1
+flat files,1
+mainframe files,1
+data governance and compliance frameworks,1
+Agile environments,1
+CRISPR/Cas9 genome editing,1
+stem cell differentiation to retinal organoids,1
+mouse model studies,1
+advanced computer skills,1
+proficiency with database programs,1
+Experience in the relevant area,1
+Strong knowledge of relevant area of scientific research,1
+Expertise and experience in human stem cell culture (desirable),1
+HTTP,1
+cloud-native architecture,1
+asynchronous workflows,1
+ReactJS,1
+REST API design and development,1
+PostgresSQL,1
+code quality,1
+device drivers,1
+installation and diagnostic tools,1
+libraries,1
+operating system internals,1
+memory management,1
+interrupts,1
+threading,1
+VB (Visual Basic),1
+front-end development,1
+web standards,1
+web content accessibility guidelines,1
+secure website development,1
+information privacy principles,1
+general IT concepts,1
+IT security concepts,1
+PKI,1
+Identity Management,1
+system integration,1
+enterprise software development,1
+testing frameworks,1
+automated testing tools,1
+Relational Database Management,1
+database tools,1
+"operating system internals (memory management, scheduling, interrupts, threading)",1
+Windows driver development (kernel-mode and user-mode),1
+diagnostic tools,1
+Databricks environments,1
+cloud infrastructure patterns and automation,1
+CI pipelines,1
+Apple iOS / iPadOS programming,1
+iOS / iPadOS systems,1
+Microsoft Visual Studio,1
+Informix (IDS),1
+Pronto Xi,1
+SDLC processes,1
+Software development,1
+cloud architecture,1
+automation tooling,1
+TCP,1
+BGP,1
+IP routing,1
+IPv6,1
+network security,1
+API's,1
+Microservices,1
+high uptime systems,1
+IT and Cyber Security Fundamentals,1
+Cybersecurity principles,1
+Networking,1
+Databases (SQL),1
+Hardware fundamentals,1
+Software fundamentals,1
+Software Development Fundamentals,1
+Software development life cycles,1
+Agile frameworks,1
+Requirements gathering,1
+Project scoping,1
+Data Center/Critical environment Electrical Mechanical Infrastructure,1
+PUE (Power Usage Effectiveness) knowledge,1
+cabling infrastructure best practices and methodologies,1
+Industrial/commercial electrical one-line diagrams,1
+reading and comprehending blueprints and building documentation,1
+MOPs/SOPs/EOPs development,1
+Vendor management,1
+RFI/RFP/RFQ submittals review,1
+Data Center white space design,1
+telecom system design,1
+"electronic parts, components, integrated circuitry, mechanical systems, equipment, packaging design",1
+"design, deploy and troubleshoot cloud solutions",1
+troubleshooting of complex technical issues,1
+AI experience or desire to expand AI skills desirable,1
+MS SQL Server administration and backup processes,1
+Windows environments,1
+ERP systems and business-critical applications,1
+On-premise infrastructure experience,1
+VMware,1
+disaster recovery,1
+business continuity,1
+Kubernetes (AKS/GKE),1
+Shell,1
+Active Directory,1
+Azure Authentication,1
+Single sign-on,1
+MFA,1
+DSC,1
+ITIL,1
+AWS's Well-Architected Framework,1
+Automation,1
+Agile development processes,1
+backlog planning,1
+grooming,1
+retrospectives,1
+causal inference,1
+time series analysis,1
+ADABAS,1
+ADABAS Natural,1
+Mainframe experience,1
+Software AG,1
+Backups,1
+Disaster recovery,1
+Patches and emergency fixes,1
+Performance tuning,1
+Database utilities,1
+Third-party monitoring tools,1
+"Upgrades and maintenance planning (ADABAS, Natural, Software AG, 3rd party products)",1
+Type script,1
+AWS services,1
+AWS cloud architecture,1
+unit testing frameworks,1
+"secure handling of secrets, environment variables, and service configurations",1
+API specifications and service integrations across platforms,1
+agentic AI for business use cases,1
+repository governance,1
+agile software development,1
+Alteryx,1
+"modelling (diagnostic, descriptive, predictive or prescriptive)",1
+quantitative skills,1
+Data integration processes,1
+ETL tools,1
+ETL design,1
+Statistical methods,1
+Data visualization,1
+KPIs and performance measurement,1
+business processes understanding,1
+JSON View,1
+Object-oriented programming (OOP),1
+Data modelling and database design,1
+Power Query,1
+PIM/MDM solutions,1
+Stibo STEP technology,1
+STEP Data model Configuration,1
+STEP Workflows,1
+STEP Business rules,1
+STEP Integration End Points,1
+STEP WebUI,1
+STEP REST API,1
+STEP integration components,1
+Java/J2EE,1
+XSLT,1
+REST web services,1
+SOAP web services,1
+data management best practices,1
+cloud-based data solutions,1
+.NET framework and ASP.NET (C#),1
+SharePoint or web front-end development,1
+"JavaScript (React, Node.js)",1
+JSON,1
+Web APIs,1
+Dynamics 365,1
+D365 CRM,1
+D365 F&O,1
+Common Data Model (CDM) schema mapping,1
+semantic modelling,1
+metadata standards,1
+data dictionaries,1
+data quality rules,1
+retention tags,1
+sensitivity labels,1
+lifecycle rules,1
+integration contracts,1
+source-to-target mappings,1
+API payload structures,1
+event schemas,1
+transformation logic,1
+"Azure integration patterns (APIM, Logic Apps, Functions)",1
+"governance frameworks (ISO27001, APP 11)",1
+AI/ML,1
+speech-to-text pipelines,1
+text-to-speech pipelines,1
+avatar/character systems,1
+event-driven systems,1
+data personalization,1
+personalisation at scale,1
+AEM development,1
+Component development,1
+Template and dialog creation,1
+Content Fragments,1
+Experience Fragments,1
+AEM workflows,1
+DAM and asset management,1
+"Java development (servlets, services, schedulers)",1
+"JavaScript frameworks (React, Angular)",1
+AEM SPA Editor,1
+ICT,1
+cyber security,1
+emerging technologies,1
+Data analytics,1
+design thinking,1
+UX design,1
+advanced learning technologies,1
+AI in learning,1
+cloud-native engineering,1
+Canonical models,1
+Shared schemas,1
+Dynamics 365 CRM,1
+Common Data Model mapping,1
+Metadata management,1
+Data governance,1
+Data lineage,1
+Data dictionaries,1
+API payloads,1
+Event schemas,1
+Transformation logic,1
+Source-to-target mappings,1
+Azure API Management (APIM),1
+Azure Logic Apps,1
+Azure Functions,1
+Star schemas,1
+Semantic models,1
+Medallion architecture,1
+Data quality rules,1
+Microsoft Sentinel,1
+Copilot for Security,1
+KQL queries,1
+analytics rules,1
+SOC operations,1
+incident response,1
+automated workflows,1
+playbooks,1
+integrations with other security tools,1
+enterprise SIEM tools,1
+Google BigQuery,1
+CRM analytics tools,1
+Customer segmentation,1
+Campaign analytics,1
+Transformer Reinforcement Learning (TRL),1
+Supervised Fine-Tuning (SFT),1
+Direct Preference Optimization (DPO),1
+Hugging Face Transformers ecosystem,1
+tool/function calling for LLMs,1
+"Model deployment and inference optimization (vLLM, TGI, quantization)",1
+Retrieval-Augmented Generation (RAG) architectures,1
+LoRA/QLoRA for efficient fine-tuning,1
+embedding and reranking models,1
+async/await programming,1
+API design with streaming responses,1
+Web scraping and search API integration experience,1
+Prompt Engineering,1
+AI systems design,1
+DevSecOps practices,1
+deployment pipelines,1
+virtualisation,1
+backup and restore,1
+PowerCLI,1
+YAML,1
+"qPCR experience (instrument, workflow and data analyses)",1
+DNA sequencing applications,1
+"Life Science instruments including qPCR, CE Sequencing, Next Gen Sequencing, Microarray, Sample prep, and cellular analysis systems",1
+basic statistical analysis,1
+literature searches,1
+academic writing conventions,1
+data services,1
+near real time streaming,1
+RESTFUL,1
+SOAP,1
+fault-tolerance code,1
+data integration design and development,1
+cyber security frameworks,1
+SQL queries,1
+data extraction and cleansing,1
+integration with system front end components,1
+NV1 security clearance,1
+machine learning methods,1
+logistic regression,1
+multiple linear regression,1
+survival models,1
+tree-based ensemble methods,1
+cross-validation,1
+LIME,1
+SHAP,1
+forecasting methods,1
+"Python (pandas, scikit-learn, pytorch, polars)",1
+Jupyter notebooks,1
+LLMs or AI agents,1
+data flows,1
+data quality auditing,1
+coding standards,1
+quality improvement initiatives,1
+Epic certification,1
+EMR configuration,1
+"Configure, build, test, and maintain EMR",1
+Incident monitoring and resolution,1
+Workflow analysis,1
+Enhancement request analysis,1
+Functional and technical solution development,1
+Node/NPM,1
+RESTful Services in Java using Spring,1
+Quarkus,1
+Spring,1
+JEE,1
+JAX-RS,1
+OAS 3.0,1
+Single Sign-On (SSO) or OAuth,1
+Building SPAs,1
+Angular architecture,1
+RxJS,1
+Angular CLI,1
+photonics computing,1
+optical telecommunications,1
+designing optical experiments,1
+radiation modelling,1
+Monte Carlo simulations,1
+dosimetry,1
+radiation protection,1
+radiation science and technology,1
+ICD-10-AM,1
+ACHI,1
+Australian Coding Standards,1
+Casemix,1
+DRGs,1
+Activity-Based Funding,1
+Tableau,1
+data lake architectures,1
+lake house architectures,1
+data modelling practices,1
+data quality metric,1
+governance frameworks,1
+data lifecycle principles,1
+data privacy and compliance obligations,1
+data design,1
+ELT processes,1
+data frameworks,1
+data strategy,1
+inventory optimization,1
+master data management,1
+demand planning,1
+AI systems,1
+natural language processing tools,1
+machine learning products,1
+NestJS,1
+Strong knowledge of data and AI governance frameworks and methodologies,1
+AI governance implementation,1
+R-programming language,1
+data.table,1
+ggplot2,1
+scipy,1
+sklearn,1
+pytorch,1
+MATLAB,1
+calculus,1
+differential equations,1
+strong statistics background,1
+clinical coding,1
+DRG grouping,1
+clinical classification and coding,1
+industry standards and coding practices,1
+Linux/Unix,1
+"Web Services (REST, SOAP)",1
+fault-tolerant coding,1
+AWS cloud,1
+integration design,1
+enterprise geospatial platforms,1
+streaming,1
+intelligence methodologies,1
+relational databases,1
+evidence-based research and analysis,1
+statistical measurement techniques,1
+marketing analytics,1
+ASP.NET (C#),1
+MVC patterns,1
+DNS,1
+routing,1
+switching,1
+firewalls,1
+CPU,1
+memory,1
+storage,1
+network interfaces,1
+datacenter infrastructure,1
+network protocols,1
+responsive design,1
+web accessibility,1
+Server-side rendering,1
+Static site generation,1
+Legacy systems modernization,1
+component-based architecture,1
+mobile native,1
+dot net core,1
+on-premise,1
+structured and unstructured databases,1
+designing and implementing large scale systems,1
+Application Security,1
+Unit Testing,1
+Regression Testing,1
+peer programming,1
+code reviews,1
+automated release management,1
+Spark SQL,1
+data exploration,1
+classification,1
+regression,1
+predictive analytics,1
+Linux-based systems,1
+container/container orchestrator intrusion analysis,1
+detection development,1
+malware analysis,1
+static analysis,1
+dynamic analysis environment,1
+cyber threat intelligence,1
+open source intelligence,1
+partner reporting,1
+cloud-based infrastructure,1
+"cloud service models (IaaS, PaaS, SaaS)",1
+large scale data analysis,1
+cloud security awareness,1
+Technical SEO,1
+programmatic SEO,1
+GenAI tools,1
+"content discovery, crawling, rendering and ranking",1
+current web development technologies,1
+AI-enabled software solutions,1
+API frameworks,1
+Generative AI and LLMs,1
+multi-agent system design,1
+multimodal models,1
+test engineering,1
+multiple programming languages and technologies,1
+RDS,1
+DevOps/MLOps tooling,1
+LLM tooling,1
+cost efficiency,1
+enterprise inference services,1
+AI/ML platform architectures,1
+Large Language Models,1
+Agentic AI development,1
+Multi-agent systems,1
+Azure cloud services,1
+Azure cloud security,1
+AI tooling,1
+inferential statistical analysis,1
+data interpretation,1
+Databricks on AWS,1
+API integrations,1
+Change Data Capture (CDC),1
+real-time data processing,1
+data cataloging,1
+data quality frameworks,1
+alerting systems,1
+data transformation frameworks,1
+SaaS platforms integrations,1
+time-series,1
+biomedical signal processing,1
+model interpretability,1
+algorithm robustness,1
+"distributed, event-driven architectures",1
+cryptography,1
+key management,1
+wallet systems,1
+financial ledgers,1
+payment orchestration layers,1
+real-time transaction systems,1
+payments,1
+financial systems,1
+security standards,1
+advanced SQL,1
+LSTM,1
+GPT,1
+Java 21,1
+SQL/NoSQL Databases,1
+cloud-based data engineering,1
+automated data pipelines,1
+AI/ML integration,1
+governance and security for data integrity,1
+BI tools familiarity,1
+Agentic AI,1
+diffusion models,1
+Strong SQL skills for querying and performance tuning,1
+Proficiency in designing star schemas for data warehouses,1
+data storage solutions,1
+AI-enabled techniques,1
+metadata-driven approaches,1
+predictive models,1
+statistical techniques,1
+statistical models,1
+"large, complex, and unstructured datasets",1
+marketing concepts,1
+lifecycle marketing,1
+campaign optimisation,1
+Cloud Scale storage,1
+Tailwind,1
+Expo.dev,1
+.NET Framework,1
+Flutter,1
+mobile app development for iOS and Android platforms,1
+cloud computing,1
+high availability,1
+resilience principles,1
+networking fundamentals (TCPIP/DNS),1
+scenario analysis,1
+machine learning techniques,1
+algorithms,1
+object-oriented design,1
+functional design principles,1
+test automation,1
+monitoring and automated remediation,1
+cloud-based design,1
+high-transaction throughput,1
+Amazon Web Services (AWS),1
+infrastructure design,1
+Data Science,1
+Regular Expressions,1
+APIs (third-party),1
+Software deployments,1
+programming languages,1
+software architecture,1
+development methodologies,1
+Polars,1
+mathematical optimisation libraries,1
+ML pipelines,1
+Data structures,1
+Cloud platforms,1
+Software Architecture,1
+pandas,1
+probability of default,1
+credit risk frameworks,1
+regulatory requirements,1
+reporting frameworks,1
+C++ programming,1
+UML,1
+Strong understanding of the full SDLC,1
+GitHub CI,1
+Jira,1
+Monday,1
+low-latency models,1
+real-time computer vision pipelines,1
+unit testing,1
+TDD,1
+information systems,1
+data engineering workflows,1
+clean architecture,1
+real-time APIs,1
+performance-critical infrastructure,1
+finetuning models,1
+embedding search,1
+model scaffolding,1
+knowledge graphs,1
+Data Engineering foundations,1
+"ML algorithms, techniques and packages",1
+Cloud (GCP/AWS/Azure),1
+Argo,1
+ML Ops,1
+VBA,1
+data intelligence,1
+data extraction,1
+AI-driven solutions,1
+benchmarking,1
+configuration,1
+integrations,1
+customisations,1
+advanced SQL scripting,1
+data transformation methods,1
+system engineering,1
+object oriented programming,1
+ETL/ELT design patterns,1
+data warehousing concepts,1
+Kimball dimensional data model (facts and dimensions),1
+containers,1
+web front ends,1
+functional programming,1
+Domain Driven Design,1
+asynchronous message-based systems,1
+Bigquery,1
+Salesforce platform capabilities,1
+"configuration, customisation and development patterns and tools",1
+data modelling and management,1
+DevOps practices including version control and CI/CD,1
+Knowledge across the System Development Lifecycle (SDLC),1
+Experience in Agile project delivery methodologies,1
+security controls,1
+Snowflake architecture,1
+DWH concepts,1
+serverless,1
+DevOps tools,1
+model scoring,1
+real-time batch monitoring,1
+Propensity Models,1
+enterprise data strategy,1
+data lakehouse architecture,1
+storage solutions,1
+integration pipelines,1
+data accessibility,1
+cost monitoring and optimization,1
+semi-structured data,1
+unstructured data,1
+Snowflake,1
+data science initiatives support,1
+model optimization and deployment,1
+Redis,1
+Pinecone,1
+FAISS,1
+DevOps workflows,1
+SQL development and optimization,1
+"Power BI (semantic modeling, DAX, report development)",1
+Data Lake,1
+Data Factory,1
+Dataflows Gen2,1
+Notebooks,1
+Delta storage,1
+Parquet storage,1
+Bronze/Silver/Gold lakehouse,1
+"data governance (lineage, cataloging, security, RBAC)",1
+end-to-end ML predictive model development,1
+model training,1
+model deployment,1
+fine-tuning,1
+RAG architecture,1
+AI/ML libraries,1
+agentic AI systems,1
+containerized deployment environments,1
+mixed methods,1
+REST/GraphQL APIs,1
+SharePoint,1
+"Cloud Data Platform Architecture (Azure, AWS, GCP)",1
+Data Lakehouses and Data Warehouses,1
+ETL/ELT Pipeline Development,1
+Data Modelling,1
+"Data Governance, Security, and Compliance",1
+Big Data Analytics,1
+Real-time Data Processing,1
+"Databricks (Spark, MLflow, Delta Lake)",1
+Snowflake (Data Engineering and Administration),1
+large-scale distributed systems,1
+software engineering principles,1
+design patterns,1
+"architect, build, and scale complex systems",1
+discrete event simulation,1
+mathematical optimisation,1
+detection,1
+pose estimation,1
+face analytics,1
+ML,1
+MLOps tooling,1
+Governance,1
+Drift,1
+Model transparency,1
+Multi-cloud (AWS/Azure),1
+Azure to AWS migration,1
+ADF (Azure Data Factory),1
+CDC (Change Data Capture),1
+schema drift,1
+access controls,1
+information architecture,1
+test scripting,1
+government-grade security controls,1
+documentation to standards,1
+REST Architecture principles,1
+.NET 8+,1
+Microsoft Web API,1
+data flow,1
+business logic,1
+design scalable frameworks,1
+OpenAI API,1
+Gemini,1

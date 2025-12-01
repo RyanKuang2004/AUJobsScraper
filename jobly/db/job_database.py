@@ -22,8 +22,10 @@ class JobDatabase(BaseDatabase):
         print(f"DEBUG: job_data keys: {job_data.keys()}")
         print(f"DEBUG: description length: {len(job_data.get('description', ''))}")
         company = job_data.get("company", "")
-        title = job_data.get("job_title", "") # Changed from title to job_title
-        fingerprint = self._generate_fingerprint(company, title)
+        # Use raw_job_title for fingerprint if available, otherwise use job_title
+        title_for_fingerprint = job_data.get("raw_job_title") or job_data.get("job_title", "")
+        title_for_display = job_data.get("job_title", "") # Cleaned title for display
+        fingerprint = self._generate_fingerprint(company, title_for_fingerprint)
         
         # Prepare list fields (ensure they are lists)
         new_locs = job_data.get("locations", [])
@@ -55,50 +57,6 @@ class JobDatabase(BaseDatabase):
             merged_locs = list(set(record.get('locations', []) + new_locs))
             merged_platforms = list(set(record.get('platforms', []) + new_platforms))
             merged_urls = list(set(record.get('source_urls', []) + new_urls))
-            
-            update_payload = {
-                "locations": merged_locs,
-                "platforms": merged_platforms,
-                "source_urls": merged_urls,
-                "updated_at": datetime.now().isoformat(),
-                # Update other fields if the new one is "fresher" or just overwrite
-                "description": job_data.get("description", record.get("description")),
-                "salary": job_data.get("salary", record.get("salary")),
-                "seniority": job_data.get("seniority", record.get("seniority")),
-                "posted_at": job_data.get("posted_at", record.get("posted_at")),
-                "closing_date": job_data.get("closing_date", record.get("closing_date"))
-            }
-            
-            response = self.supabase.table("job_postings").update(update_payload).eq("id", record_id).execute()
-            print(f"Merged duplicate job: {title} ({company})")
-            return response.data[0]
-            
-        else:
-            # --- INSERT ---
-            insert_payload = {
-                "fingerprint": fingerprint,
-                "job_title": title,
-                "company": company,
-                "locations": new_locs,
-                "platforms": new_platforms,
-                "source_urls": new_urls,
-                "description": job_data.get("description"),
-                "salary": job_data.get("salary"),
-                "seniority": job_data.get("seniority"),
-                "llm_analysis": job_data.get("llm_analysis"),
-                "posted_at": job_data.get("posted_at"),
-                "closing_date": job_data.get("closing_date")
-            }
-            
-            response = self.supabase.table("job_postings").insert(insert_payload).execute()
-            print(f"Inserted new job: {title} ({company})")
-            return response.data[0]
-
-    def get_job_by_fingerprint(self, company: str, title: str) -> Optional[Dict[str, Any]]:
-        """Retrieves a job by its fingerprint."""
-        fp = self._generate_fingerprint(company, title)
-        response = self.supabase.table("job_postings").select("*").eq("fingerprint", fp).execute()
-        return response.data[0] if response.data else None
 
     def check_existing_urls(self, urls: List[str], only_complete: bool = False) -> List[str]:
         """

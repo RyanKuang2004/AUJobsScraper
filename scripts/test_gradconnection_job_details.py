@@ -7,8 +7,9 @@ from jobly.scrapers.gradconnection_scraper import GradConnectionScraper
 
 async def test_job_extraction():
     # Example Job URL
-    job_url = "https://au.gradconnection.com/employers/citadel-citadel-securities/jobs/citadel-securities-2025-2026-quantitative-research-phd-internship-engineering-10/"
+    #job_url = "https://au.gradconnection.com/employers/citadel-citadel-securities/jobs/citadel-securities-2025-2026-quantitative-research-phd-internship-engineering-10/"
     #job_url = "https://au.gradconnection.com/employers/tiktok/jobs/tiktok-graduate-frontend-engineer-tiktok-live-2026-start-8/"
+    job_url = "https://au.gradconnection.com/employers/lucid-consulting-australia/jobs/lucid-consulting-australia-graduate-fire-services-fire-safety-engineer-13/"
 
     print(f"Testing GradConnection Job Extraction")
     print(f"URL: {job_url}")
