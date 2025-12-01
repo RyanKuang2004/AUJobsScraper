@@ -1,6 +1,7 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from .base_database import BaseDatabase
+from ..utils.scraper_utils import normalize_locations, extract_job_role
 
 
 class JobDatabase(BaseDatabase):
@@ -28,22 +29,30 @@ class JobDatabase(BaseDatabase):
         fingerprint = self._generate_fingerprint(company, title_for_fingerprint)
         
         # Prepare list fields (ensure they are lists)
-        new_locs = job_data.get("locations", [])
-        if isinstance(new_locs, str): new_locs = [new_locs]
+        raw_locs = job_data.get("locations", [])
+        if isinstance(raw_locs, str): raw_locs = [raw_locs]
+        
+        # Handle legacy single fields if passed
+        if "location" in job_data and not raw_locs:
+            raw_locs = [job_data["location"]]
+            
+        # Normalize locations
+        new_locs = normalize_locations(raw_locs)
         
         new_platforms = job_data.get("platforms", [])
         if isinstance(new_platforms, str): new_platforms = [new_platforms]
-        
-        new_urls = job_data.get("source_urls", [])
-        if isinstance(new_urls, str): new_urls = [new_urls]
-        
-        # Handle legacy single fields if passed
-        if "location" in job_data and not new_locs:
-            new_locs = [job_data["location"]]
         if "platform" in job_data and not new_platforms:
             new_platforms = [job_data["platform"]]
+            
+        new_urls = job_data.get("source_urls", [])
+        if isinstance(new_urls, str): new_urls = [new_urls]
         if "source_url" in job_data and not new_urls:
             new_urls = [job_data["source_url"]]
+
+        # Extract job role if not provided
+        job_role = job_data.get("job_role")
+        if not job_role:
+            job_role = extract_job_role(title_for_fingerprint, company)
 
         # 2. Check for existing record
         existing = self.supabase.table("job_postings").select("*").eq("fingerprint", fingerprint).execute()
@@ -54,9 +63,69 @@ class JobDatabase(BaseDatabase):
             record_id = record['id']
             
             # Merge lists and remove duplicates
-            merged_locs = list(set(record.get('locations', []) + new_locs))
+            # Handle locations (list of dicts)
+            current_locs = record.get('locations') or []
+            # Ensure current_locs is a list (it might be None or jsonb)
+            if not isinstance(current_locs, list): current_locs = []
+            
+            combined_locs = current_locs + new_locs
+            unique_locs = []
+            seen_locs = set()
+            for loc in combined_locs:
+                # Use city+state tuple as unique key
+                key = (loc.get('city'), loc.get('state'))
+                if key not in seen_locs:
+                    seen_locs.add(key)
+                    unique_locs.append(loc)
+            
+            merged_locs = unique_locs
             merged_platforms = list(set(record.get('platforms', []) + new_platforms))
             merged_urls = list(set(record.get('source_urls', []) + new_urls))
+            
+            # Update existing record
+            update_data = {
+                "locations": merged_locs,
+                "platforms": merged_platforms,
+                "source_urls": merged_urls,
+                "updated_at": datetime.now().isoformat(),
+                # Update standard fields if they are missing in DB but present in new data
+                # or just overwrite? Usually overwrite or keep existing.
+                # Let's overwrite standard fields to keep fresh
+                "job_title": title_for_display or record.get("job_title"),
+                "company": company or record.get("company"),
+                "job_role": job_role or record.get("job_role"), # Prefer new role calculation
+                "description": job_data.get("description") or record.get("description"),
+                "seniority": job_data.get("seniority") or record.get("seniority"),
+                "salary": job_data.get("salary") or record.get("salary"),
+                "posted_at": job_data.get("posted_at") or record.get("posted_at"),
+                "closing_date": job_data.get("closing_date") or record.get("closing_date"),
+            }
+            
+            self.supabase.table("job_postings").update(update_data).eq("id", record_id).execute()
+            return {"id": record_id, "status": "updated", "fingerprint": fingerprint}
+            
+        else:
+            # --- INSERT ---
+            insert_data = {
+                "fingerprint": fingerprint,
+                "job_title": title_for_display,
+                "company": company,
+                "job_role": job_role,
+                "locations": new_locs,
+                "platforms": new_platforms,
+                "source_urls": new_urls,
+                "description": job_data.get("description"),
+                "seniority": job_data.get("seniority"),
+                "salary": job_data.get("salary"),
+                "posted_at": job_data.get("posted_at"),
+                "closing_date": job_data.get("closing_date"),
+                "llm_analysis": job_data.get("llm_analysis"),
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat(),
+            }
+            
+            res = self.supabase.table("job_postings").insert(insert_data).execute()
+            return {"id": res.data[0]['id'], "status": "inserted", "fingerprint": fingerprint}
 
     def check_existing_urls(self, urls: List[str], only_complete: bool = False) -> List[str]:
         """

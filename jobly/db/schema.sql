@@ -14,10 +14,11 @@ create table public.job_postings (
   -- Array fields for merging duplicates
   source_urls text[] not null, -- List of all URLs found for this job
   platforms text[] not null,   -- List of platforms (seek, linkedin, etc.)
-  locations text[] not null,   -- List of locations
+  locations jsonb not null,    -- List of normalized locations [{"city": "...", "state": "..."}]
   
   -- Standard fields
   job_title text not null,
+  job_role text,               -- Standardized job role
   company text,
   
   -- LLM output stored as flexible JSON
