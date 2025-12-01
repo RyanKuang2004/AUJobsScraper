@@ -156,6 +156,33 @@ ROLE_TAXONOMY = {
     "GIS Analyst": ["gis analyst", "gis", "spatial analyst", "geospatial"],
     "Technical Writer": ["technical writer", "documentation engineer"],
     "Sales Engineer": ["sales engineer", "field application engineer", "presales engineer"],
+    
+    # Executive & Strategic Leadership (Above standard Management)
+    "Executive Leadership": ["head of", "director of", "chief", "partner", "vp", "vice president", "executive"],
+    "Data Leadership": ["head of data", "manager data", "data manager", "data lead", "master data", "mdm"],
+    "Technical Lead": ["tech lead", "technical lead", "team lead", "lead developer", "delivery lead", "initiative lead"],
+
+    # Academic & Education
+    "Lecturer": ["lecturer", "professor", "phd", "research fellow", "faculty", "teaching staff", "academic", "tutor"],
+
+    # Health & Clinical Informatics
+    "Health Informatics": ["clinical coder", "clinical data", "emr", "casemix", "health data", "medical coder", "cognitive rater"],
+
+    # Data Governance, Compliance & Strategy
+    "Data Governance & Compliance": ["data governance", "data protection", "data integrity", "privacy", "compliance", "audit", "risk", "policy"],
+    "Strategy & Transformation": ["digital transformation", "strategy", "roadmap", "change manager", "business development"],
+
+    # Consulting & Implementation
+    "Technical Consultant": ["consultant", "advisor", "implementation specialist", "integration specialist", "solution specialist"],
+    "Graduate Program": ["graduate", "cadet", "intern", "trainee", "early career", "digital futures"],
+
+    # Specialized Operations & Support
+    "Technical Support": ["support advisor", "help desk", "service desk", "support specialist", "technical support"],
+    "Operations & Logistics": ["coordinator", "scheduler", "logistics", "weighbridge", "gatehouse"],
+    
+    # Niche / Other Tech
+    "SEO & Digital Marketing": ["seo", "search engine optimization", "digital marketing", "marketing technology", "martech"],
+    "Intelligence & Security": ["intelligence officer", "tspv", "security clearance", "defense"],
 }
 
 
