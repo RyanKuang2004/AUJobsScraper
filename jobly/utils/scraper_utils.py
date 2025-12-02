@@ -10,53 +10,18 @@ from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 import spacy
 
-import re
-import spacy
+# Import all constants from the constants module
+from .constants import (
+    STOP_WORDS,
+    ROLE_SUFFIXES,
+    ROLE_TAXONOMY,
+    CITY_TO_STATE,
+    STATE_NAMES,
+    NON_CITY_PATTERNS,
+    AUSTRALIAN_STATES
+)
 
 nlp = spacy.load("en_core_web_sm")
-
-# stop / noise words to strip early (including seniority terms)
-STOP_WORDS = {
-    "internship", "intern", "grad", "program", "graduate", "graduate program",
-    "phd", "masters", "start", "2025", "2026", "2024", "2027", "full-time", "full time",
-    "part-time", "part time", "remote", "on-site", "onsite", "temporary", "contract",
-    # Seniority-related terms to remove
-    "senior", "junior", "lead", "entry", "entry level", "level", "principal",
-    "head", "staff", "trainee"
-}
-
-# Useful suffixes we want to detect (multi-word ones first)
-ROLE_SUFFIXES = [
-    "test automation engineer",
-    "machine learning engineer",
-    "software engineer",
-    "electrical engineer",
-    "civil engineer",
-    "automation engineer",
-    "test engineer",
-    "data scientist",
-    "data engineer",
-    "software developer",
-    "research scientist",
-    "systems engineer",
-    "hardware engineer",
-    "design engineer",
-    "engineer",
-    "developer",
-    "scientist",
-    "analyst",
-    "architect",
-    "designer",
-    "administrator",
-    "specialist",
-    "consultant",
-    "technician",
-    "coordinator",
-    "manager",
-]
-
-# ensure longest-first matching
-ROLE_SUFFIXES = sorted(ROLE_SUFFIXES, key=lambda s: -len(s))
 
 def _clean_text(raw: str) -> str:
     text = raw.lower()
@@ -109,139 +74,6 @@ def _normalize_engineering_word(phrase: str) -> str:
 _embedding_model = None
 _role_embeddings = None
 
-# Job role taxonomy mapping standard roles to keywords
-# IMPORTANT: Order matters! More specific roles are checked first to avoid misclassification.
-# AI/ML and specialized roles appear before generic "Software Engineer" category.
-ROLE_TAXONOMY = {
-    # ========================================
-    # AI & ML (HIGHEST PRIORITY - Most Specific)
-    # ========================================
-    "AI Engineer": [
-        # Combined AI/ML terminology - should classify as AI Engineer per user requirement
-        "ai/ml engineer", "ai ml engineer", "ai / ml", "ai/ml", "ai & ml",
-        # AI-focused roles
-        "ai engineer", "ai software engineer", "ai developer", "ai software developer", 
-        "ai programmer", "artificial intelligence engineer",
-        # Generative AI
-        "generative ai", "genai engineer", "gen ai", "generative ai engineer",
-        # AI Platform/Infrastructure
-        "ai platform engineer", "ai devops", "ai infrastructure",
-        # General AI
-        "artificial intelligence",
-    ],
-    "Machine Learning Engineer": [
-        "machine learning engineer", "ml engineer", "machine learning developer", "ml developer",
-        "mlops engineer", "mlops", "deep learning engineer", "ml software engineer",
-    ],
-    "NLP Engineer": [
-        "nlp engineer", "natural language processing", "conversational ai", 
-        "prompt engineer", "llm engineer", "large language model",
-    ],
-    "Research Scientist": [
-        "research scientist", "computer scientist", "applied scientist",
-        "research fellow", "computational science", "research assistant",
-    ],
-    
-    # ========================================
-    # Data & Analytics (High Priority - Specific)
-    # ========================================
-    "Data Scientist": ["data scientist", "applied scientist", "spatial data scientist"],
-    "Data Engineer": ["data engineer", "big data", "etl developer", "azure data engineer", "data pipeline"],
-    "Data Analyst": ["data analyst", "reporting analyst", "insights analyst", "commercial analyst"],
-    "Business Intelligence Analyst": ["business intelligence", "bi analyst", "bi developer", "power bi", "tableau", "analytics"],
-    "Data Architect": ["data architect", "data modeler", "database architect"],
-    "Database Administrator": ["database administrator", "database developer", "sql developer", "dba"],
-    
-    # ========================================
-    # Infrastructure, Cloud & DevOps (Medium-High Priority)
-    # ========================================
-    "DevOps Engineer": ["devops engineer", "site reliability engineer", "sre", "ci/cd engineer", "devsecops"],
-    "Cloud Engineer": ["cloud engineer", "azure engineer", "aws engineer", "cloud architect", "solutions engineer", "gcp engineer"],
-    "Platform Engineer": ["platform engineer", "infrastructure engineer", "systems engineer"],
-    "Systems Administrator": ["systems administrator", "it support", "application support", "service desk", "sysadmin"],
-    
-    # ========================================
-    # Security (Medium Priority)
-    # ========================================
-    "Cyber Security Engineer": ["cyber security", "security analyst", "infosec", "detection engineer", "security engineer", "cybersecurity"],
-    
-    # ========================================
-    # QA & Testing (Medium Priority)
-    # ========================================
-    "QA Engineer": ["qa engineer", "test engineer", "software tester", "automation engineer", "quality assurance", "test automation"],
-    
-    # ========================================
-    # Specialized Engineering (Medium Priority)
-    # ========================================
-    "Embedded Systems Engineer": ["embedded systems", "firmware engineer", "embedded software", "embedded engineer"],
-    "Game Developer": ["game developer", "game software engineer", "unity developer", "game engineer"],
-    "Mobile Developer": ["mobile developer", "ios developer", "android developer", "react native", "mobile app developer", "flutter"],
-    "Web Developer": ["web developer", "react developer", "angular developer", "vue developer", "php developer", "website designer", "frontend developer"],
-    "Full Stack Developer": ["full stack", "fullstack", "javascript full stack", "typescript full stack"],
-    
-    # ========================================
-    # Generic Software Engineering (LOWER Priority - Catch-all)
-    # ========================================
-    "Software Engineer": ["software engineer", "developer", "programmer", "backend", "frontend", "application engineer", "app engineer"],
-    
-    # ========================================
-    # Management & Strategy
-    # ========================================
-    "Engineering Manager": ["engineering manager", "head of engineering", "development manager", "team lead", "cto", "chief technology officer"],
-    "Product Manager": ["product manager", "product owner", "digital product manager"],
-    "Business Analyst": ["business analyst", "technical business analyst", "process analyst"],
-    "Solutions Architect": ["solutions architect", "enterprise architect", "technical architect", "solution architect"],
-    
-    # ========================================
-    # Specialized/Niche
-    # ========================================
-    "Quantitative Analyst": ["quantitative analyst", "quant", "actuary", "algorithmic trader"],
-    "GIS Analyst": ["gis analyst", "gis", "spatial analyst", "geospatial"],
-    "Technical Writer": ["technical writer", "documentation engineer"],
-    "Sales Engineer": ["sales engineer", "field application engineer", "presales engineer"],
-    
-    # ========================================
-    # Executive & Leadership
-    # ========================================
-    "Executive Leadership": ["head of", "director of", "chief", "partner", "vp", "vice president", "executive"],
-    "Data Leadership": ["head of data", "manager data", "data manager", "data lead", "master data", "mdm"],
-    "Technical Lead": ["tech lead", "technical lead", "lead developer", "delivery lead", "initiative lead"],
-
-    # ========================================
-    # Academic & Education
-    # ========================================
-    "Lecturer": ["lecturer", "professor", "phd", "research fellow", "faculty", "teaching staff", "academic", "tutor"],
-
-    # ========================================
-    # Health & Clinical Informatics
-    # ========================================
-    "Health Informatics": ["clinical coder", "clinical data", "emr", "casemix", "health data", "medical coder", "cognitive rater"],
-
-    # ========================================
-    # Data Governance, Compliance & Strategy
-    # ========================================
-    "Data Governance & Compliance": ["data governance", "data protection", "data integrity", "privacy", "compliance", "audit", "risk", "policy"],
-    "Strategy & Transformation": ["digital transformation", "strategy", "roadmap", "change manager", "business development"],
-
-    # ========================================
-    # Consulting & Implementation
-    # ========================================
-    "Technical Consultant": ["consultant", "advisor", "implementation specialist", "integration specialist", "solution specialist"],
-    "Graduate Program": ["graduate", "cadet", "intern", "trainee", "early career", "digital futures"],
-
-    # ========================================
-    # Specialized Operations & Support
-    # ========================================
-    "Technical Support": ["support advisor", "help desk", "service desk", "support specialist", "technical support"],
-    "Operations & Logistics": ["coordinator", "scheduler", "logistics", "weighbridge", "gatehouse"],
-    
-    # ========================================
-    # Niche / Other Tech
-    # ========================================
-    "SEO & Digital Marketing": ["seo", "search engine optimization", "digital marketing", "marketing technology", "martech"],
-    "Intelligence & Security": ["intelligence officer", "tspv", "security clearance", "defense"],
-}
-
 
 def _get_embedding_model():
     """Lazy load the OpenAI embeddings model."""
@@ -257,10 +89,11 @@ def _get_embedding_model():
 def extract_job_role(title: str, company_name: str = None, similarity_threshold: float = 0.5) -> str:
     """
     Classify job title into standardized roles using hybrid approach:
-    1. Clean the title (remove company name, seniority terms, noise)
-    2. Try keyword matching against taxonomy
-    3. Fall back to embedding similarity if no keyword match
-    4. Return "Specialized" if similarity is below threshold
+    1. Check for early-match patterns (e.g., Graduate Program) before stop word removal
+    2. Clean the title (remove company name, seniority terms, noise)
+    3. Try keyword matching against taxonomy
+    4. Fall back to embedding similarity if no keyword match
+    5. Return "Specialized" if similarity is below threshold
     
     Args:
         title: Raw job title
@@ -272,6 +105,33 @@ def extract_job_role(title: str, company_name: str = None, similarity_threshold:
     """
     if not title:
         return "Specialized"
+    
+    # Step 0: Early pattern matching for roles that would be affected by stop word removal
+    # This catches patterns like "Graduate Program", "Internship Program", etc. BEFORE
+    # stop words like "graduate", "program", "intern" are removed
+    title_lower = title.lower()
+    
+    # Define early-match patterns that should be checked before stop word removal
+    # These patterns contain words that are in STOP_WORDS but are essential for classification
+    early_match_patterns = {
+        "Graduate Program": [
+            # Graduate program patterns
+            r'\bgraduate\s+program\b',
+            r'\bgrad\s+program\b', 
+            r'\bgraduate\s+development\s+programme\b',
+            r'\bgraduate\s+programme\b',
+            # Internship patterns (also map to Graduate Program per taxonomy)
+            r'\binternship\s+program\b',
+            r'\binternship\s+programme\b',
+            r'\bintern\s+program\b',
+        ],
+    }
+    
+    # Check early patterns
+    for role, patterns in early_match_patterns.items():
+        for pattern in patterns:
+            if re.search(pattern, title_lower):
+                return role
     
     # Step 1: Clean the title
     cleaned = title.lower()
@@ -507,67 +367,8 @@ def normalize_locations(locations: list[str]) -> list[dict[str, str]]:
     if not locations:
         return []
     
-    # Comprehensive Australian city-to-state mapping (major cities and regional centers)
-    CITY_TO_STATE = {
-        # New South Wales
-        'sydney': 'NSW', 'newcastle': 'NSW', 'wollongong': 'NSW', 'central coast': 'NSW',
-        'maitland': 'NSW', 'wagga wagga': 'NSW', 'albury': 'NSW', 'port macquarie': 'NSW',
-        'tamworth': 'NSW', 'orange': 'NSW', 'dubbo': 'NSW', 'bathurst': 'NSW',
-        'lismore': 'NSW', 'nowra': 'NSW', 'north sydney': 'NSW', 'parramatta': 'NSW',
-        
-        # Victoria
-        'melbourne': 'VIC', 'geelong': 'VIC', 'ballarat': 'VIC', 'bendigo': 'VIC',
-        'shepparton': 'VIC', 'mildura': 'VIC', 'warrnambool': 'VIC', 'wodonga': 'VIC',
-        'traralgon': 'VIC', 'horsham': 'VIC',
-        
-        # Queensland
-        'brisbane': 'QLD', 'gold coast': 'QLD', 'sunshine coast': 'QLD', 'townsville': 'QLD',
-        'cairns': 'QLD', 'toowoomba': 'QLD', 'mackay': 'QLD', 'rockhampton': 'QLD',
-        'bundaberg': 'QLD', 'hervey bay': 'QLD', 'gladstone': 'QLD', 'ipswich': 'QLD',
-        
-        # South Australia
-        'adelaide': 'SA', 'mount gambier': 'SA', 'whyalla': 'SA', 'port lincoln': 'SA',
-        'port augusta': 'SA', 'murray bridge': 'SA',
-        
-        # Western Australia
-        'perth': 'WA', 'mandurah': 'WA', 'bunbury': 'WA', 'geraldton': 'WA',
-        'albany': 'WA', 'kalgoorlie': 'WA', 'busselton': 'WA', 'rockingham': 'WA',
-        
-        # Tasmania
-        'hobart': 'TAS', 'launceston': 'TAS', 'devonport': 'TAS', 'burnie': 'TAS',
-        
-        # Northern Territory
-        'darwin': 'NT', 'alice springs': 'NT', 'palmerston': 'NT',
-        
-        # Australian Capital Territory
-        'canberra': 'ACT',
-    }
-    
-    # State/territory full names to filter out
-    STATE_NAMES = {
-        'new south wales', 'nsw', 'victoria', 'vic', 'queensland', 'qld',
-        'south australia', 'sa', 'western australia', 'wa', 'tasmania', 'tas',
-        'northern territory', 'nt', 'australian capital territory', 'act', 'australia', 'au'
-    }
-    
-    # Common non-city descriptors to filter out
-    NON_CITY_PATTERNS = [
-        r'cbd and inner suburbs',
-        r'inner suburbs',
-        r'western suburbs',
-        r'eastern suburbs',
-        r'northern suburbs',
-        r'southern suburbs',
-        r'metro',
-        r'metropolitan',
-        r'region',
-        r'area',
-        r'greater\s+\w+',
-    ]
-    
     # Australian state/territory abbreviations
-    states = ['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT']
-    state_pattern = '|'.join(states)
+    state_pattern = '|'.join(AUSTRALIAN_STATES)
     
     normalized = []
     

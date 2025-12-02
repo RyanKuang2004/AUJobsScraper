@@ -115,13 +115,36 @@ class ProspleScraper(BaseScraper):
             content = await page.content()
             soup = BeautifulSoup(content, 'lxml')
             
-            # Try to extract JSON-LD data
+            # Extract JSON-LD data first (needed for title/company)
             json_data = self._extract_json_ld(soup)
             
-            # Extract all fields
+            # Extract minimal fields for duplicate check
+            title = self._extract_title(soup, json_data)
+            company = self._extract_company(soup, json_data)
+            
+            # Check if duplicate exists
+            existing_id = self.db.check_duplicate_by_fingerprint(company, title)
+            
+            if existing_id:
+                # DUPLICATE: Only extract locations for merge
+                self.logger.info(f"Duplicate detected: {title} ({company})")
+                locations = self._extract_locations(soup, json_data)
+                normalized_locs = normalize_locations(locations)
+                
+                # Update duplicate with minimal fields
+                result = self.db.update_duplicate_job(
+                    job_id=existing_id,
+                    locations=normalized_locs,
+                    source_url=job_url,
+                    platform=self.platform
+                )
+                self.logger.info(f"Updated duplicate job: {title} ({company}) - {result.get('status')}")
+                return
+            
+            # NEW JOB: Extract all fields
             extracted = {
-                "title": self._extract_title(soup, json_data),
-                "company": self._extract_company(soup, json_data),
+                "title": title,
+                "company": company,
                 "locations": self._extract_locations(soup, json_data),
                 "description": self._extract_description(soup, json_data),
                 "salary": self._extract_salary(soup, json_data),
@@ -147,6 +170,7 @@ class ProspleScraper(BaseScraper):
             
         except Exception as e:
             self.logger.error(f"Error scraping job {job_url}: {e}")
+    
     
     def _extract_json_ld(self, soup) -> Optional[Dict]:
         """Extract JSON-LD JobPosting data from page"""

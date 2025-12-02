@@ -101,19 +101,44 @@ class SeekScraper(BaseScraper):
     async def _process_job(self, page, job_url: str):
         """
         Navigates to a job URL, extracts details, and saves the job.
+        Uses early duplicate detection to avoid unnecessary extraction.
         """
         try:
             self.logger.info(f"Scraping Job: {job_url}")
             await page.goto(job_url, wait_until="domcontentloaded")
             await asyncio.sleep(random.uniform(1, 3))
             
-            # Extract all fields
+            # Get page content
             content = await page.content()
             soup = BeautifulSoup(content, 'lxml')
             
+            # Extract minimal fields first for duplicate check
+            title = self._extract_title(soup)
+            company = self._extract_company(soup)
+            
+            # Check if duplicate exists
+            existing_id = self.db.check_duplicate_by_fingerprint(company, title)
+            
+            if existing_id:
+                # DUPLICATE: Only extract location for merge
+                self.logger.info(f"Duplicate detected: {title} ({company})")
+                location = self._extract_location(soup)
+                normalized_locs = normalize_locations([location])
+                
+                # Update duplicate with minimal fields
+                result = self.db.update_duplicate_job(
+                    job_id=existing_id,
+                    locations=normalized_locs,
+                    source_url=job_url,
+                    platform=self.platform
+                )
+                self.logger.info(f"Updated duplicate job: {title} ({company}) - {result.get('status')}")
+                return
+            
+            # NEW JOB: Extract all fields
             extracted = {
-                "title": self._extract_title(soup),
-                "company": self._extract_company(soup),
+                "title": title,
+                "company": company,
                 "location": self._extract_location(soup),
                 "description": self._extract_description(soup),
                 "salary": self._extract_salary(soup),
@@ -136,6 +161,7 @@ class SeekScraper(BaseScraper):
             
         except Exception as e:
             self.logger.error(f"Error scraping job {job_url}: {e}")
+    
     
     def _extract_title(self, soup) -> str:
         """Extract job title from page"""

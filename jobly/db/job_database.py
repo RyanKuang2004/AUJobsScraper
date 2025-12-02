@@ -101,6 +101,96 @@ class JobDatabase(BaseDatabase):
             self.logger.error(f"Error finding job by fingerprint: {e}")
             return None
     
+    def check_duplicate_by_fingerprint(self, company: str, title: str) -> Optional[str]:
+        """
+        Check if a job with this fingerprint exists.
+        Returns the job ID if exists, None otherwise.
+        
+        This allows early duplicate detection before full extraction.
+        """
+        fingerprint = self._generate_fingerprint(company, title)
+        existing = self._find_by_fingerprint(fingerprint)
+        return existing["id"] if existing else None
+    
+    def update_duplicate_job(
+        self, 
+        job_id: str, 
+        locations: List[Dict], 
+        source_url: str | List[str], 
+        platform: str | List[str]
+    ) -> Dict[str, Any]:
+        """
+        Update only the mergeable fields for a duplicate job.
+        Merges locations, source_urls, platforms, and updates timestamp.
+        
+        This is more efficient than full upsert when we know the job exists.
+        
+        Args:
+            job_id: Database ID of existing job
+            locations: New locations to merge (already normalized)
+            source_url: New source URL(s) to add (string or list)
+            platform: Platform name(s) to add (string or list)
+        
+        Returns:
+            Result dictionary with status
+        """
+        try:
+            # Normalize inputs to lists
+            source_urls = [source_url] if isinstance(source_url, str) else (source_url or [])
+            platforms = [platform] if isinstance(platform, str) else (platform or [])
+            
+            # Fetch existing job
+            result = self.supabase.table("job_postings") \
+                .select("locations, source_urls, platforms") \
+                .eq("id", job_id) \
+                .execute()
+            
+            if not result.data:
+                self.logger.error(f"Job {job_id} not found for update")
+                return {"id": job_id, "status": "error", "message": "Job not found"}
+            
+            existing = result.data[0]
+            
+            # Merge all fields
+            merged_locations = self._merge_locations(
+                existing.get("locations", []),
+                locations
+            )
+            
+            merged_urls = self._merge_unique_values(
+                existing.get("source_urls", []),
+                source_urls
+            )
+            
+            merged_platforms = self._merge_unique_values(
+                existing.get("platforms", []),
+                platforms
+            )
+            
+            # Update only mergeable fields
+            update_data = {
+                "locations": merged_locations,
+                "source_urls": merged_urls,
+                "platforms": merged_platforms,
+                "updated_at": datetime.now().isoformat(),
+            }
+            
+            self.supabase.table("job_postings") \
+                .update(update_data) \
+                .eq("id", job_id) \
+                .execute()
+            
+            self.logger.info(f"Updated duplicate job: {job_id}")
+            return {
+                "id": job_id,
+                "status": "updated_duplicate",
+                "merged_fields": list(update_data.keys())
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error updating duplicate job {job_id}: {e}")
+            return {"id": job_id, "status": "error", "message": str(e)}
+    
     def _update_existing_job(
         self, 
         existing: Dict, 
@@ -109,40 +199,42 @@ class JobDatabase(BaseDatabase):
     ) -> Dict[str, Any]:
         """Merge new data with existing job and update"""
         self.logger.info(f"Updating existing job: {existing['id']}")
+        job_id = existing["id"]
         
-        # Merge list fields
-        merged_data = {
-            "locations": self._merge_locations(
-                existing.get("locations", []),
-                new_data["locations"]
-            ),
-            "platforms": self._merge_unique_values(
-                existing.get("platforms", []),
-                new_data["platforms"]
-            ),
-            "source_urls": self._merge_unique_values(
-                existing.get("source_urls", []),
-                new_data["source_urls"]
-            ),
-            "updated_at": datetime.now().isoformat(),
-        }
+        # Update mergeable fields using the optimized method
+        self.update_duplicate_job(
+            job_id=job_id,
+            locations=new_data["locations"],
+            source_url=new_data["source_urls"],  # Pass full list
+            platform=new_data["platforms"]        # Pass full list
+        )
         
-        # Update scalar fields (prefer new over existing)
-        for field in ["job_title", "job_role", "company", "description", 
-                      "salary", "seniority", "posted_at", "closing_date"]:
-            merged_data[field] = new_data[field] or existing.get(field)
-        
-        # Execute update
-        self.supabase.table("job_postings") \
-            .update(merged_data) \
-            .eq("id", existing["id"]) \
-            .execute()
+        # Update scalar fields
+        self._update_scalar_fields(job_id, new_data, existing)
         
         return {
-            "id": existing["id"],
+            "id": job_id,
             "status": "updated",
             "fingerprint": fingerprint
         }
+    
+    def _update_scalar_fields(
+        self,
+        job_id: str,
+        new_data: Dict,
+        existing: Dict
+    ) -> None:
+        """Update scalar (non-mergeable) fields, preferring new over existing"""
+        scalar_updates = {}
+        for field in ["job_title", "job_role", "company", "description", 
+                      "salary", "seniority", "posted_at", "closing_date"]:
+            scalar_updates[field] = new_data.get(field) or existing.get(field)
+        
+        if scalar_updates:
+            self.supabase.table("job_postings") \
+                .update(scalar_updates) \
+                .eq("id", job_id) \
+                .execute()
     
     def _insert_new_job(self, data: Dict, fingerprint: str) -> Dict[str, Any]:
         """Insert a new job posting"""

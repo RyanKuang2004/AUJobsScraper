@@ -124,6 +124,7 @@ class GradConnectionScraper(BaseScraper):
     async def _process_job(self, page: Page, job_url: str):
         """
         Navigates to a job URL, extracts details, and saves the job.
+        Uses early duplicate detection to avoid unnecessary extraction.
         """
         try:
             self.logger.info(f"Scraping Job: {job_url}")
@@ -144,13 +145,39 @@ class GradConnectionScraper(BaseScraper):
                 self.logger.info(f"Skipping event posting: {job_url}")
                 return None
             
+            # Extract minimal fields for duplicate check
+            title = self._extract_title(soup)
+            company = self._extract_company(soup)
+            
+            # Check if duplicate exists
+            existing_id = self.db.check_duplicate_by_fingerprint(company, title)
+            
+            if existing_id:
+                # DUPLICATE: Only extract locations for merge
+                self.logger.info(f"Duplicate detected: {title} ({company})")
+                
+                # Try to extract JSON data for locations
+                json_data = await self._extract_json_data(page)
+                locations = self._extract_locations(soup, json_data)
+                normalized_locs = normalize_locations(locations)
+                
+                # Update duplicate with minimal fields
+                result = self.db.update_duplicate_job(
+                    job_id=existing_id,
+                    locations=normalized_locs,
+                    source_url=job_url,
+                    platform=self.platform
+                )
+                self.logger.info(f"Updated duplicate job: {title} ({company}) - {result.get('status')}")
+                return
+            
+            # NEW JOB: Extract all fields
             # Try to extract JSON data
             json_data = await self._extract_json_data(page)
             
-            # Extract all fields
             extracted = {
-                "title": self._extract_title(soup),
-                "company": self._extract_company(soup),
+                "title": title,
+                "company": company,
                 "locations": self._extract_locations(soup, json_data),
                 "description": self._extract_description(soup),
                 "salary": self._extract_salary(soup, json_data),
@@ -176,6 +203,7 @@ class GradConnectionScraper(BaseScraper):
             
         except Exception as e:
             self.logger.error(f"Error scraping job {job_url}: {e}")
+    
     
     def _is_event_posting(self, soup) -> bool:
         """Check if this is an event posting that should be skipped"""
