@@ -1,11 +1,12 @@
+import os
 import asyncio
-import json
 import random
+import json
 import re
-from datetime import datetime
-from typing import List, Dict, Any
+from typing import Optional, Dict, Any, List
 from playwright.async_api import async_playwright, Page
 from bs4 import BeautifulSoup
+from datetime import datetime
 from jobly.scrapers.base_scraper import BaseScraper
 from jobly.config import settings
 from jobly.utils.scraper_utils import (
@@ -13,7 +14,7 @@ from jobly.utils.scraper_utils import (
     extract_salary_from_text,
     determine_seniority,
     normalize_locations,
-    extract_job_role,  # Added for job role extraction
+    extract_job_role,
 )
 
 
@@ -65,8 +66,7 @@ class GradConnectionScraper(BaseScraper):
                         
                         self.logger.info(f"Found {len(new_links)} NEW jobs on page {page_num}")
                         
-                        for job_url in new_links:
-                            await self._process_job(page, job_url)
+                        await self.process_jobs_concurrently(context, new_links)
                                 
                     except Exception as e:
                         self.logger.error(f"Error processing page {page_num}: {e}")
@@ -129,243 +129,221 @@ class GradConnectionScraper(BaseScraper):
             self.logger.info(f"Scraping Job: {job_url}")
             await page.goto(job_url, wait_until="domcontentloaded")
             
-            # Wait for the description container to ensure dynamic content is loaded
-            # Try waiting for either standard or campaign container
+            # Wait for content to load
             try:
-                # We can't easily wait for "OR" in playwright without a complex selector or Promise.race
-                # So we'll just wait for a generic indicator or a short timeout for the primary one
-                # Actually, let's try waiting for the h1 which is common
                 await page.wait_for_selector("h1.employers-profile-h1", timeout=10000)
-                # Give a little extra time for the rest of the body to render
                 await asyncio.sleep(2)
             except Exception:
                 self.logger.warning(f"Timeout waiting for h1 on {job_url}")
 
-            job_content = await page.content()
-            job_soup = BeautifulSoup(job_content, 'lxml')
+            content = await page.content()
+            soup = BeautifulSoup(content, 'lxml')
             
-            # ===== EVENT FILTERING =====
             # Check if this is an event posting and skip if so
-            # Events should not be saved to the database
-            
-            # First check for "Sign up to event" button (strong indicator)
-            event_button = job_soup.find("button", string=lambda s: s and "sign up to event" in s.lower())
-            if event_button:
-                self.logger.info(f"Skipping event posting (found 'Sign up to event' button): {job_url}")
+            if self._is_event_posting(soup):
+                self.logger.info(f"Skipping event posting: {job_url}")
                 return None
             
-            # Also check for Job Type field in ul.box-content (Strategy 2 page structure)
-            box_content_check = job_soup.select_one("ul.box-content")
-            if box_content_check:
-                for li in box_content_check.find_all("li"):
-                    strong = li.find("strong")
-                    if strong and "job type" in strong.text.strip().lower():
-                        # Get value by removing the strong tag text from li text
-                        value = li.text.replace(strong.text, "").strip()
-                        if "event" in value.lower():
-                            self.logger.info(f"Skipping event posting (Job Type = Event): {job_url}")
-                            return None
+            # Try to extract JSON data
+            json_data = await self._extract_json_data(page)
             
-            # Check for Job Type in overview container (Strategy 1 page structure)
-            overview_check = job_soup.select_one("div.job-overview-container")
-            if overview_check:
-                dt = overview_check.find("dt", string=lambda text: text and "Job Type" in text)
-                if dt:
-                    dd = dt.find_next_sibling("dd")
-                    if dd and "event" in dd.text.strip().lower():
-                        self.logger.info(f"Skipping event posting (Job Type = Event): {job_url}")
-                        return None
-            
-            # Initialize fields
-            title = "Unknown Title"
-            company = "Unknown Company"
-            location = "Australia"
-            description = ""
-            salary = None
-            posted_at = None
-            application_deadline = None
-            
-            # Extract Title
-            title_elem = job_soup.select_one("h1.employers-profile-h1")
-            if title_elem:
-                job_title = title_elem.text.strip()  # Original title
-                job_role = extract_job_role(job_title)  # Cleaned role for display
-            else:
-                job_title = "Unknown Title"
-                job_role = "Other"
-            
-            # Extract Company
-            company_elem = job_soup.select_one("h1.employers-panel-title")
-            if company_elem:
-                company = company_elem.text.strip()
-            
-            # ===== PRIMARY STRATEGY: Extract from JSON via JavaScript =====
-            # Try to extract data from window.__initialState__ JSON object by evaluating JavaScript
-            json_data = None
-            try:
-                # Use page.evaluate to get the JSON object directly from JavaScript context
-                # This avoids parsing issues with large JSON strings
-                json_data = await page.evaluate("() => window.__initialState__")
-                if json_data:
-                    self.logger.info("Successfully extracted window.__initialState__ via JavaScript")
-            except Exception as e:
-                self.logger.warning(f"Failed to extract JSON data via JavaScript: {e}")
-            
-            # Extract from JSON if available
-            if json_data:
-                try:
-                    # Navigate to the job data in the JSON structure
-                    # Structure: {"campaignstore": {"campaign": {...}}}
-                    campaign = json_data.get("campaignstore", {}).get("campaign", {})
-                    
-                    # Extract locations (it's a list)
-                    locations_list = campaign.get("locations", [])
-                    if locations_list:
-                        location = ", ".join(locations_list)
-                        self.logger.info(f"Extracted {len(locations_list)} locations from JSON")
-                    
-                    # Extract salary if available
-                    sal_text = campaign.get("salary")
-                    if sal_text:
-                        salary = sal_text
-                    
-                    # Extract closing date
-                    closes_text = campaign.get("closing_date")
-                    if closes_text:
-                        application_deadline = closes_text
-                        
-                except Exception as e:
-                    self.logger.warning(f"Failed to parse JSON fields: {e}")
-            
-            # ===== FALLBACK STRATEGY: Extract from HTML =====
-            # Use HTML extraction if JSON extraction failed OR if key fields are missing
-            if not json_data or not location or location == "Australia" or not application_deadline or not posted_at:
-                self.logger.info("Using HTML extraction (fallback or supplementary)")
-                
-                # Strategy 1: Standard Job Page (div.job-overview-container)
-                overview_container = job_soup.select_one("div.job-overview-container")
-                if overview_container:
-                    # Helper to find dd next to dt with specific text
-                    def get_detail(label_text):
-                        dt = overview_container.find("dt", string=lambda text: text and label_text in text)
-                        if dt:
-                            dd = dt.find_next_sibling("dd")
-                            if dd:
-                                return dd.text.strip()
-                        return None
-
-                    if not location or location == "Australia":
-                        loc_text = get_detail("Locations")
-                        if loc_text:
-                            location = loc_text
-                    
-                    if not salary:
-                        sal_text = get_detail("Salary")
-                        if sal_text:
-                            salary = sal_text
-                    
-                    if not application_deadline:
-                        closes_text = get_detail("Closes")
-                        if closes_text:
-                            application_deadline = closes_text
-
-                    if not posted_at:
-                        posted_text = get_detail("Posted")
-                        if posted_text:
-                            posted_at = posted_text
-
-                # Strategy 2: Campaign Style Page (ul.box-content)
-                else:
-                    box_content = job_soup.select_one("ul.box-content")
-                    if box_content:
-                        for li in box_content.find_all("li"):
-                            strong = li.find("strong")
-                            if not strong:
-                                continue
-                            
-                            label = strong.text.strip().lower()
-                            # Remove the strong tag to get the rest of the text
-                            strong.extract()
-                            value = li.text.strip()
-                            
-                            if "locations" in label and (not location or location == "Australia"):
-                                location = value
-                            elif "salary" in label and not salary:
-                                salary = value
-                            elif "closing date" in label and not application_deadline:
-                                application_deadline = value
-                            elif "posted" in label and not posted_at:
-                                posted_at = value
-                
-                # Clean up "...show more" text if present (should not be needed with JSON extraction)
-                if location and ("...show more" in location.lower() or "show more" in location.lower()):
-                    location = re.sub(r'\.{2,}show more', '', location, flags=re.IGNORECASE).strip()
-                    self.logger.warning(f"Removed 'show more' text from location: {location[:100]}...")
-
-            # Extract Description
-            # Strategy 1: Standard Job Page
-            desc_elem = job_soup.select_one("div.job-description-container")
-            
-            # Strategy 2: Campaign Style Page
-            if not desc_elem:
-                desc_elem = job_soup.select_one("div.campaign-content-container")
-            
-            if desc_elem:
-                description = remove_html_tags(str(desc_elem))
-            else:
-                # Fallback to body if specific container not found
-                # Try to find main content area first
-                main_elem = job_soup.find("main")
-                if main_elem:
-                    description = remove_html_tags(str(main_elem))
-                else:
-                    description = remove_html_tags(str(job_soup.body))
-            
-            self.logger.info(f"Extracted: {job_role} at {company}")
-            self.logger.info(f"Location: {location}, Salary: {salary}, Deadline: {application_deadline}")
-
-            # Parse closing date if available
-            closing_date = None
-            if application_deadline:
-                try:
-                    # Remove ordinal suffix (st, nd, rd, th)
-                    cleaned = re.sub(r"(\d+)(st|nd|rd|th)", r"\1", application_deadline)
-                    dt = datetime.strptime(cleaned, "%d %b %Y, %I:%M %p")
-                    closing_date = dt.strftime("%Y-%m-%d %H:%M:%S")
-                except Exception as e:
-                    self.logger.warning(f"Failed to parse closing date '{application_deadline}': {e}")
-            
-            # Split and normalize locations to structured format
-            # Location may be a comma-separated string like "Brisbane, QLD, Melbourne, VIC"
-            location_list = [loc.strip() for loc in location.split(',') if loc.strip()]
-            locations = normalize_locations(location_list)
-
-            job_data = {
-                "job_title": job_title,  # Original title for fingerprinting
-                "job_role": job_role,  # Cleaned role for display
-                "company": company,
-                "locations": locations,
-                "source_urls": [job_url],
-                "description": description,
-                "salary": salary,
-                "seniority": "Junior",  # Hardcoded for graduate/internship platform
-                "llm_analysis": None,
-                "platforms": ["gradconnection"],
-                "posted_at": posted_at,
-                "closing_date": closing_date
+            # Extract all fields
+            extracted = {
+                "title": self._extract_title(soup),
+                "company": self._extract_company(soup),
+                "locations": self._extract_locations(soup, json_data),
+                "description": self._extract_description(soup),
+                "salary": self._extract_salary(soup, json_data),
+                "posted_at": self._extract_posted_date(soup),
+                "closing_date": self._extract_closing_date(soup, json_data),
             }
             
-            saved_job = self.save_job(job_data)
-            if saved_job:
-                self.logger.info(f"Saved job: {job_role}")
-
-            return job_data
+            # Build JobPosting using base class helper
+            job_posting = self._build_job_posting(
+                job_title=extracted["title"],
+                company=extracted["company"],
+                raw_locations=extracted["locations"],
+                source_url=job_url,
+                description=extracted["description"],
+                salary=extracted.get("salary"),
+                seniority="Junior",  # Hardcoded for graduate/internship platform
+                posted_at=extracted.get("posted_at"),
+                closing_date=extracted.get("closing_date"),
+            )
+            
+            # Save to database
+            self.save_job(job_posting)
             
         except Exception as e:
-            self.logger.error(f"Error scraping job details {job_url}: {e}")
+            self.logger.error(f"Error scraping job {job_url}: {e}")
+    
+    def _is_event_posting(self, soup) -> bool:
+        """Check if this is an event posting that should be skipped"""
+        # Check for "Sign up to event" button
+        event_button = soup.find("button", string=lambda s: s and "sign up to event" in s.lower())
+        if event_button:
+            return True
+        
+        # Check Job Type field in ul.box-content
+        box_content = soup.select_one("ul.box-content")
+        if box_content:
+            for li in box_content.find_all("li"):
+                strong = li.find("strong")
+                if strong and "job type" in strong.text.strip().lower():
+                    value = li.text.replace(strong.text, "").strip()
+                    if "event" in value.lower():
+                        return True
+        
+        # Check Job Type in overview container
+        overview = soup.select_one("div.job-overview-container")
+        if overview:
+            dt = overview.find("dt", string=lambda text: text and "Job Type" in text)
+            if dt:
+                dd = dt.find_next_sibling("dd")
+                if dd and "event" in dd.text.strip().lower():
+                    return True
+        
+        return False
+    
+    async def _extract_json_data(self, page: Page) -> Optional[Dict]:
+        """Extract window.__initialState__ JSON data via JavaScript"""
+        try:
+            json_data = await page.evaluate("() => window.__initialState__")
+            if json_data:
+                self.logger.info("Successfully extracted window.__initialState__")
+                return json_data
+        except Exception as e:
+            self.logger.warning(f"Failed to extract JSON data: {e}")
+        return None
+    
+    def _extract_title(self, soup) -> str:
+        """Extract job title from page"""
+        elem = soup.select_one("h1.employers-profile-h1")
+        return elem.text.strip() if elem else "Unknown Title"
+    
+    def _extract_company(self, soup) -> str:
+        """Extract company name from page"""
+        elem = soup.select_one("h1.employers-panel-title")
+        return elem.text.strip() if elem else "Unknown Company"
+    
+    def _extract_locations(self, soup, json_data: Optional[Dict]) -> list:
+        """Extract locations from JSON or HTML"""
+        # Try JSON first
+        if json_data:
+            campaign = json_data.get("campaignstore", {}).get("campaign", {})
+            locations_list = campaign.get("locations", [])
+            if locations_list:
+                self.logger.info(f"Extracted {len(locations_list)} locations from JSON")
+                return locations_list
+        
+        # Fallback to HTML extraction
+        overview = soup.select_one("div.job-overview-container")
+        if overview:
+            dt = overview.find("dt", string=lambda text: text and "Location" in text)
+            if dt:
+                dd = dt.find_next_sibling("dd")
+                if dd:
+                    return [dd.text.strip()]
+        
+        # Try box-content structure
+        box_content = soup.select_one("ul.box-content")
+        if box_content:
+            for li in box_content.find_all("li"):
+                strong = li.find("strong")
+                if strong and "location" in strong.text.strip().lower():
+                    value = li.text.replace(strong.text, "").strip()
+                    # Handle "show more" suffix
+                    if "...show more" in value:
+                        value = value.replace("...show more", "").strip()
+                    return [loc.strip() for loc in value.split(",")]
+        
+        return ["Australia"]  # Default fallback
+    
+    def _extract_salary(self, soup, json_data: Optional[Dict]) -> Optional[str]:
+        """Extract salary from JSON or HTML"""
+        # Try JSON first
+        if json_data:
+            campaign = json_data.get("campaignstore", {}).get("campaign", {})
+            salary = campaign.get("salary")
+            if salary:
+                return salary
+        
+        # Fallback to HTML
+        overview = soup.select_one("div.job-overview-container")
+        if overview:
+            dt = overview.find("dt", string=lambda text: text and "Salary" in text)
+            if dt:
+                dd = dt.find_next_sibling("dd")
+                if dd:
+                    return dd.text.strip()
+        
+        return None
+    
+    def _extract_description(self, soup) -> str:
+        """Extract job description from page"""
+        # Try campaign content container first
+        desc_elem = soup.select_one("div.campaign-content-container")
+        if desc_elem:
+            return remove_html_tags(str(desc_elem))
+        
+        # Fallback to job description container
+        desc_elem = soup.select_one("div.job-description-container")
+        if desc_elem:
+            return remove_html_tags(str(desc_elem))
+        
+        # Last resort: full body
+        return remove_html_tags(str(soup.body))
+    
+    def _extract_posted_date(self, soup) -> Optional[str]:
+        """Extract posted date from page"""
+        box_content = soup.select_one("ul.box-content")
+        if box_content:
+            for li in box_content.find_all("li"):
+                strong = li.find("strong")
+                if strong and "posted" in strong.text.strip().lower():
+                    value = li.text.replace(strong.text, "").strip()
+                    try:
+                        # Try parsing ISO format date
+                        return datetime.fromisoformat(value.replace("Z", "+00:00")).date().isoformat()
+                    except:
+                        return None
+        return None
+    
+    def _extract_closing_date(self, soup, json_data: Optional[Dict]) -> Optional[str]:
+        """Extract closing/application deadline from JSON or HTML"""
+        # Try JSON first
+        if json_data:
+            campaign = json_data.get("campaignstore", {}).get("campaign", {})
+            closing_date = campaign.get("closing_date")
+            if closing_date:
+                try:
+                    return datetime.fromisoformat(closing_date.replace("Z", "+00:00")).date().isoformat()
+                except:
+                    pass
+        
+        # Fallback to HTML
+        box_content = soup.select_one("ul.box-content")
+        if box_content:
+            for li in box_content.find_all("li"):
+                strong = li.find("strong")
+                if strong and ("deadline" in strong.text.strip().lower() or "closing" in strong.text.strip().lower()):
+                    value = li.text.replace(strong.text, "").strip()
+                    try:
+                        # Try parsing ISO format date
+                        return datetime.fromisoformat(value.replace("Z", "+00:00")).date().isoformat()
+                    except:
+                        # Try parsing formatted date
+                        try:
+                            cleaned = re.sub(r"(\d+)(st|nd|rd|th)", r"\1", value)
+                            dt = datetime.strptime(cleaned, "%d %b %Y, %I:%M %p")
+                            return dt.date().isoformat()
+                        except:
+                            return None
+        
+        return None
 
-    def run(self, initial_run: bool = False):
-        asyncio.run(self.scrape(initial_run=initial_run))
+    def run(self):
+        asyncio.run(self.scrape())
 
 
 if __name__ == "__main__":

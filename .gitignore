@@ -43,3 +43,5 @@ playwright/.auth/
 
 # Project specific
 .antigravityignore
+
+data/

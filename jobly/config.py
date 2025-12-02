@@ -68,6 +68,11 @@ class ScraperSettings(BaseSettings):
         default=False,
         description="Initial run flag"
     )
+    
+    concurrency: int = Field(
+        default=5,
+        description="Number of concurrent job processing tasks"
+    )
 
     model_config = SettingsConfigDict(env_prefix="SCRAPER_")
 

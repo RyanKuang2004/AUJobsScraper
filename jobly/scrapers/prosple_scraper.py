@@ -1,9 +1,9 @@
 import asyncio
 import random
-from typing import List, Dict, Any
+import json
+from typing import List, Dict, Any, Optional
 from playwright.async_api import async_playwright, Page
 from bs4 import BeautifulSoup
-import json
 from jobly.scrapers.base_scraper import BaseScraper
 from jobly.config import settings
 from jobly.utils.scraper_utils import (
@@ -18,7 +18,6 @@ class ProspleScraper(BaseScraper):
     def __init__(self):
         super().__init__("prosple")
         self.base_url = "https://au.prosple.com"
-        # Base search URL as requested
         self.search_url_base = "https://au.prosple.com/search-jobs?locations=9692&study_fields=502&opportunity_types=1"
 
     async def scrape(self):
@@ -56,8 +55,8 @@ class ProspleScraper(BaseScraper):
                     
                     self.logger.info(f"Found {len(new_jobs_data)} NEW jobs on page start={start}")
                     
-                    for job_data in new_jobs_data:
-                        await self._process_job(page, job_data)
+                    new_links = [d['url'] for d in new_jobs_data]
+                    await self.process_jobs_concurrently(context, new_links)
                     
                     start += items_per_page
                     
@@ -76,16 +75,13 @@ class ProspleScraper(BaseScraper):
             content = await page.content()
             soup = BeautifulSoup(content, 'lxml')
             
-            # The container for results
-            # Based on user request, we look for h2 with specific class
-            # class="sc-dOfePm dyaRTx heading sc-692f12d5-0 bTRRDW"
+            # Find job cards
             job_cards = soup.find_all("h2", class_="sc-dOfePm dyaRTx heading sc-692f12d5-0 bTRRDW")
             
             if not job_cards:
-                # Check if we are just out of results (page might be empty or have different structure)
+                # Check if no results
                 if "No matching search results" in content:
                     return []
-                # If container not found but page loaded, maybe selector changed or empty
                 return []
 
             jobs_data = []
@@ -96,7 +92,6 @@ class ProspleScraper(BaseScraper):
 
                 link = link_elem['href']
                 if not link.startswith("http"):
-                    # Ensure we don't double slash if base_url ends with / and link starts with /
                     base = self.base_url.rstrip('/')
                     path = link.lstrip('/')
                     link = f"{base}/{path}"
@@ -117,156 +112,159 @@ class ProspleScraper(BaseScraper):
             await page.goto(job_url, wait_until="domcontentloaded")
             await asyncio.sleep(random.uniform(1, 3))
             
-            # Get full HTML including dynamically loaded content if any
-            # But for JSON-LD, domcontentloaded might be enough. 
-            # Sometimes JSON-LD is injected by JS, so we might want to wait a bit or check content.
             content = await page.content()
             soup = BeautifulSoup(content, 'lxml')
             
-            # Initialize fields
-            job_title = "Unknown Title"  # Original title
-            job_role = "Other"  # Cleaned role
-            company = "Unknown Company"
-            description = ""
-            salary = None
-            posted_at = None
-            application_deadline = None
-            work_type = None
-            closing_date = None
-
-            # 1. Try JSON-LD Extraction
-            json_ld_scripts = soup.find_all('script', type='application/ld+json')
-            json_data = None
+            # Try to extract JSON-LD data
+            json_data = self._extract_json_ld(soup)
             
-            for script in json_ld_scripts:
-                try:
-                    data = json.loads(script.string)
-                    if isinstance(data, dict) and data.get('@type') == 'JobPosting':
-                        json_data = data
-                        break
-                    elif isinstance(data, list):
-                        for item in data:
-                            if isinstance(item, dict) and item.get('@type') == 'JobPosting':
-                                json_data = item
-                                break
-                except (json.JSONDecodeError, AttributeError):
-                    continue
-            
-            if json_data:
-                self.logger.info("Found JSON-LD JobPosting data")
-                job_title = json_data.get('title', "Unknown Title")  # Original title
-                job_role = extract_job_role(job_title)  # Cleaned role
-                
-                hiring_org = json_data.get('hiringOrganization')
-                if isinstance(hiring_org, dict):
-                    company = hiring_org.get('name', company)
-                elif isinstance(hiring_org, str):
-                    company = hiring_org
-                
-                job_loc = json_data.get('jobLocation')
-                if isinstance(job_loc, list):
-                    locations = [loc["address"] for loc in job_loc if isinstance(loc, dict)]
-
-                    for i, loc in enumerate(locations):
-                        if type(loc) == dict:
-                            locations[i] = loc.get('addressLocality')
-                
-                if locations == [None]:
-                    locations = ["Australia"]
-                
-                # Normalize locations to structured format
-                locations = normalize_locations(locations)
-
-                description_html = json_data.get('description', "")
-                description = remove_html_tags(description_html)
-                
-                posted_at = json_data.get('datePosted')
-                application_deadline = json_data.get('validThrough')
-                
-                emp_type = json_data.get('employmentType')
-                if isinstance(emp_type, list):
-                    work_type = ", ".join(emp_type)
-                else:
-                    work_type = emp_type
-
-            # 2. Fallback / Supplement with HTML Scraping
-            
-            # Title fallback / refinement (H1 often has more detail like "Start ASAP")
-            # Only use H1 if JSON-LD didn't provide title
-            if job_title == "Unknown Title":
-                h1_elem = soup.find("h1")
-                if h1_elem:
-                    h1_text = h1_elem.text.strip()
-                    if h1_text:
-                        job_title = h1_text  # Original title
-                        job_role = extract_job_role(job_title)  # Cleaned role
-
-            # Company fallback
-            if company == "Unknown Company":
-                company_elem = soup.find("a", href=lambda x: x and "/graduate-employers/" in x)
-                if company_elem:
-                    company = company_elem.text.strip()
-
-            # Description fallback
-            if not description:
-                main_content = soup.find("main")
-                if main_content:
-                    description = remove_html_tags(str(main_content))
-                else:
-                    description = remove_html_tags(str(soup.body))
-
-            # Salary Extraction
-            # Check JSON-LD baseSalary first (rarely present but good to check)
-            if json_data and 'baseSalary' in json_data:
-                salary_val = json_data['baseSalary']
-                if isinstance(salary_val, dict):
-                    # value might be a dict or value
-                    val = salary_val.get('value')
-                    if isinstance(val, dict):
-                        min_sal = val.get('minValue')
-                        max_sal = val.get('maxValue')
-                        unit = val.get('unitText', '')
-                        if min_sal and max_sal:
-                            salary = f"{min_sal} - {max_sal} {unit}"
-                        elif val.get('value'):
-                            salary = f"{val.get('value')} {unit}"
-            
-            if not salary:
-                # Try to extract from description text
-                salary = extract_salary_from_text(description)
-
-            # Application closing date
-
-            if json_data and 'validThrough' in json_data:
-                closing_date = json_data['validThrough']
-            
-            final_job_data = {
-                "job_title": job_title,  # Original title for fingerprinting
-                "job_role": job_role,  # Cleaned role for display
-                "company": company,
-                "locations": locations,
-                "source_urls": [job_url],
-                "description": description,
-                "salary": salary,
-                "seniority": "Junior",  # Hardcoded for graduate/internship platform
-                "llm_analysis": None,
-                "platforms": ["prosple"],
-                "posted_at": posted_at,
-                "closing_date": closing_date
+            # Extract all fields
+            extracted = {
+                "title": self._extract_title(soup, json_data),
+                "company": self._extract_company(soup, json_data),
+                "locations": self._extract_locations(soup, json_data),
+                "description": self._extract_description(soup, json_data),
+                "salary": self._extract_salary(soup, json_data),
+                "posted_at": self._extract_posted_date(json_data),
+                "closing_date": self._extract_closing_date(json_data),
             }
             
-            # If you have extended schema, you can add them. 
-            # For now, I'll log them or append to description if critical?
-            # Let's just keep standard fields.
+            # Build JobPosting using base class helper
+            job_posting = self._build_job_posting(
+                job_title=extracted["title"],
+                company=extracted["company"],
+                raw_locations=extracted["locations"],
+                source_url=job_url,
+                description=extracted["description"],
+                salary=extracted.get("salary"),
+                seniority="Junior",  # Hardcoded for graduate/internship platform
+                posted_at=extracted.get("posted_at"),
+                closing_date=extracted.get("closing_date"),
+            )
             
-            self.save_job(final_job_data)
-
+            # Save to database
+            self.save_job(job_posting)
+            
         except Exception as e:
-            self.logger.error(f"Error scraping job details {job_url}: {e}")
+            self.logger.error(f"Error scraping job {job_url}: {e}")
+    
+    def _extract_json_ld(self, soup) -> Optional[Dict]:
+        """Extract JSON-LD JobPosting data from page"""
+        json_ld_scripts = soup.find_all('script', type='application/ld+json')
+        
+        for script in json_ld_scripts:
+            try:
+                data = json.loads(script.string)
+                if isinstance(data, dict) and data.get('@type') == 'JobPosting':
+                    return data
+                elif isinstance(data, list):
+                    for item in data:
+                        if isinstance(item, dict) and item.get('@type') == 'JobPosting':
+                            return item
+            except (json.JSONDecodeError, AttributeError):
+                continue
+        
+        return None
+    
+    def _extract_title(self, soup, json_data: Optional[Dict]) -> str:
+        """Extract job title from JSON-LD or HTML"""
+        # Try JSON-LD first
+        if json_data:
+            title = json_data.get('title')
+            if title:
+                return title
+        
+        # Fallback to H1
+        h1_elem = soup.find("h1")
+        if h1_elem:
+            return h1_elem.text.strip()
+        
+        return "Unknown Title"
+    
+    def _extract_company(self, soup, json_data: Optional[Dict]) -> str:
+        """Extract company name from JSON-LD or HTML"""
+        if json_data:
+            hiring_org = json_data.get('hiringOrganization')
+            if isinstance(hiring_org, dict):
+                company = hiring_org.get('name')
+                if company:
+                    return company
+            elif isinstance(hiring_org, str):
+                return hiring_org
+        
+        return "Unknown Company"
+    
+    def _extract_locations(self, soup, json_data: Optional[Dict]) -> list:
+        """Extract locations from JSON-LD"""
+        if json_data:
+            job_loc = json_data.get('jobLocation')
+            if isinstance(job_loc, list):
+                locations = []
+                for loc in job_loc:
+                    if isinstance(loc, dict):
+                        address = loc.get('address')
+                        if isinstance(address, dict):
+                            city = address.get('addressLocality')
+                            if city:
+                                locations.append(city)
+                        elif isinstance(address, str):
+                            locations.append(address)
+                
+                if locations:
+                    return locations
+        
+        return ["Australia"]  # Default fallback
+    
+    def _extract_salary(self, soup, json_data: Optional[Dict]) -> Optional[str]:
+        """Extract salary from JSON-LD or HTML"""
+        if json_data:
+            base_salary = json_data.get('baseSalary')
+            if base_salary:
+                if isinstance(base_salary, dict):
+                    value = base_salary.get('value')
+                    if value:
+                        return str(value)
+                elif isinstance(base_salary, str):
+                    return base_salary
+        
+        # Fallback: extract from description
+        description = self._extract_description(soup, json_data)
+        if description:
+            salary = extract_salary_from_text(description)
+            if salary:
+                return salary
+        
+        return None
+    
+    def _extract_description(self, soup, json_data: Optional[Dict]) -> str:
+        """Extract job description from JSON-LD or HTML"""
+        if json_data:
+            description_html = json_data.get('description', "")
+            if description_html:
+                return remove_html_tags(description_html)
+        
+        # Fallback to body
+        return remove_html_tags(str(soup.body)) if soup.body else ""
+    
+    def _extract_posted_date(self, json_data: Optional[Dict]) -> Optional[str]:
+        """Extract posted date from JSON-LD"""
+        if json_data:
+            posted_at = json_data.get('datePosted')
+            if posted_at:
+                return posted_at
+        return None
+    
+    def _extract_closing_date(self, json_data: Optional[Dict]) -> Optional[str]:
+        """Extract closing date from JSON-LD"""
+        if json_data:
+            closing_date = json_data.get('validThrough')
+            if closing_date:
+                return closing_date
+        return None
 
     def run(self):
-        # Default run with config values
         asyncio.run(self.scrape())
+
 
 if __name__ == "__main__":
     scraper = ProspleScraper()

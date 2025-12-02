@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from .base_database import BaseDatabase
@@ -5,6 +6,10 @@ from ..utils.scraper_utils import normalize_locations, extract_job_role
 
 
 class JobDatabase(BaseDatabase):
+    def __init__(self):
+        super().__init__()
+        self.logger = logging.getLogger("JobDatabase")
+    
     @staticmethod
     def _generate_fingerprint(company: str, title: str) -> str:
         """Generates a simple fingerprint for deduplication."""
@@ -16,114 +21,174 @@ class JobDatabase(BaseDatabase):
     def upsert_job(self, job_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Smart upsert: Checks for existing job by fingerprint.
-        If exists -> Merges locations/platforms and updates.
-        If new -> Inserts new record.
+        If exists -> Merges and updates. If new -> Inserts.
         """
-        # 1. Generate Fingerprint
-        print(f"DEBUG: job_data keys: {job_data.keys()}")
-        print(f"DEBUG: description length: {len(job_data.get('description', ''))}")
-        company = job_data.get("company", "")
-        # Use job_title (original title) for fingerprint generation
-        title_for_fingerprint = job_data.get("job_title", "")
-        fingerprint = self._generate_fingerprint(company, title_for_fingerprint)
+        # 1. Generate fingerprint
+        fingerprint = self._generate_fingerprint(
+            job_data.get("company", ""),
+            job_data.get("job_title", "")
+        )
         
-        # Prepare list fields (ensure they are lists)
-        # Locations are already normalized by scrapers
-        raw_locs = job_data.get("locations", [])
-        if isinstance(raw_locs, str): raw_locs = [raw_locs]
+        # 2. Prepare data for insertion/update
+        prepared_data = self._prepare_job_data(job_data)
         
-        # Handle legacy single fields if passed
-        if "location" in job_data and not raw_locs:
-            raw_locs = [job_data["location"]]
-            
-        # Use locations as-is (already normalized by scrapers)
-        new_locs = raw_locs if isinstance(raw_locs, list) else [raw_locs]
+        # 3. Check if job exists
+        existing = self._find_by_fingerprint(fingerprint)
         
-        new_platforms = job_data.get("platforms", [])
-        if isinstance(new_platforms, str): new_platforms = [new_platforms]
-        if "platform" in job_data and not new_platforms:
-            new_platforms = [job_data["platform"]]
-            
-        new_urls = job_data.get("source_urls", [])
-        if isinstance(new_urls, str): new_urls = [new_urls]
-        if "source_url" in job_data and not new_urls:
-            new_urls = [job_data["source_url"]]
-
-        # Job role should be provided by scrapers
-        job_role = job_data.get("job_role", "Other")
-
-        # 2. Check for existing record
-        existing = self.supabase.table("job_postings").select("*").eq("fingerprint", fingerprint).execute()
-        
-        if existing.data:
-            # --- MERGE ---
-            record = existing.data[0]
-            record_id = record['id']
-            
-            # Merge lists and remove duplicates
-            # Handle locations (list of dicts)
-            current_locs = record.get('locations') or []
-            # Ensure current_locs is a list (it might be None or jsonb)
-            if not isinstance(current_locs, list): current_locs = []
-            
-            combined_locs = current_locs + new_locs
-            unique_locs = []
-            seen_locs = set()
-            for loc in combined_locs:
-                # Use city+state tuple as unique key
-                key = (loc.get('city'), loc.get('state'))
-                if key not in seen_locs:
-                    seen_locs.add(key)
-                    unique_locs.append(loc)
-            
-            merged_locs = unique_locs
-            merged_platforms = list(set(record.get('platforms', []) + new_platforms))
-            merged_urls = list(set(record.get('source_urls', []) + new_urls))
-            
-            # Update existing record
-            update_data = {
-                "locations": merged_locs,
-                "platforms": merged_platforms,
-                "source_urls": merged_urls,
-                "updated_at": datetime.now().isoformat(),
-                # Update standard fields if they are missing in DB but present in new data
-                # or just overwrite? Usually overwrite or keep existing.
-                # Let's overwrite standard fields to keep fresh
-                "job_title": job_data.get("job_title") or record.get("job_title"),
-                "company": company or record.get("company"),
-                "job_role": job_role or record.get("job_role"), # Prefer new role calculation
-                "description": job_data.get("description") or record.get("description"),
-                "seniority": job_data.get("seniority") or record.get("seniority"),
-                "salary": job_data.get("salary") or record.get("salary"),
-                "posted_at": job_data.get("posted_at") or record.get("posted_at"),
-                "closing_date": job_data.get("closing_date") or record.get("closing_date"),
-            }
-            
-            self.supabase.table("job_postings").update(update_data).eq("id", record_id).execute()
-            return {"id": record_id, "status": "updated", "fingerprint": fingerprint}
-            
+        if existing:
+            return self._update_existing_job(existing, prepared_data, fingerprint)
         else:
-            # --- INSERT ---
-            insert_data = {
-                "fingerprint": fingerprint,
-                "job_title": job_data.get("job_title"),
-                "company": company,
-                "job_role": job_role,
-                "locations": new_locs,
-                "platforms": new_platforms,
-                "source_urls": new_urls,
-                "description": job_data.get("description"),
-                "seniority": job_data.get("seniority"),
-                "salary": job_data.get("salary"),
-                "posted_at": job_data.get("posted_at"),
-                "closing_date": job_data.get("closing_date"),
-                "llm_analysis": job_data.get("llm_analysis"),
-                "created_at": datetime.now().isoformat(),
-                "updated_at": datetime.now().isoformat(),
-            }
-            
-            res = self.supabase.table("job_postings").insert(insert_data).execute()
-            return {"id": res.data[0]['id'], "status": "inserted", "fingerprint": fingerprint}
+            return self._insert_new_job(prepared_data, fingerprint)
+    
+    def _prepare_job_data(self, job_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Prepare and validate job data for database operations"""
+        self.logger.debug(f"Preparing job data: {job_data.get('job_title')}")
+        
+        # Extract required fields
+        prepared = {
+            "job_title": job_data.get("job_title", ""),
+            "job_role": job_data.get("job_role", "Other"),
+            "company": job_data.get("company", ""),
+            "description": job_data.get("description", ""),
+        }
+        
+        # Prepare list fields (already normalized by scrapers)
+        prepared["locations"] = self._prepare_list_field(
+            job_data, "locations", "location"
+        )
+        prepared["platforms"] = self._prepare_list_field(
+            job_data, "platforms", "platform"
+        )
+        prepared["source_urls"] = self._prepare_list_field(
+            job_data, "source_urls", "source_url"
+        )
+        
+        # Optional fields
+        for field in ["salary", "seniority", "posted_at", "closing_date", "llm_analysis"]:
+            prepared[field] = job_data.get(field)
+        
+        return prepared
+    
+    def _prepare_list_field(
+        self, 
+        data: dict, 
+        plural_key: str, 
+        singular_key: str
+    ) -> list:
+        """Prepare a list field, handling both plural and singular keys"""
+        value = data.get(plural_key, [])
+        
+        # Convert string to list
+        if isinstance(value, str):
+            value = [value]
+        
+        # Handle legacy singular field
+        if not value and singular_key in data:
+            singular_value = data[singular_key]
+            value = [singular_value] if isinstance(singular_value, str) else singular_value
+        
+        return value if isinstance(value, list) else [value]
+    
+    def _find_by_fingerprint(self, fingerprint: str) -> Optional[Dict]:
+        """Find existing job by fingerprint"""
+        try:
+            result = self.supabase.table("job_postings") \
+                .select("*") \
+                .eq("fingerprint", fingerprint) \
+                .execute()
+            return result.data[0] if result.data else None
+        except Exception as e:
+            self.logger.error(f"Error finding job by fingerprint: {e}")
+            return None
+    
+    def _update_existing_job(
+        self, 
+        existing: Dict, 
+        new_data: Dict, 
+        fingerprint: str
+    ) -> Dict[str, Any]:
+        """Merge new data with existing job and update"""
+        self.logger.info(f"Updating existing job: {existing['id']}")
+        
+        # Merge list fields
+        merged_data = {
+            "locations": self._merge_locations(
+                existing.get("locations", []),
+                new_data["locations"]
+            ),
+            "platforms": self._merge_unique_values(
+                existing.get("platforms", []),
+                new_data["platforms"]
+            ),
+            "source_urls": self._merge_unique_values(
+                existing.get("source_urls", []),
+                new_data["source_urls"]
+            ),
+            "updated_at": datetime.now().isoformat(),
+        }
+        
+        # Update scalar fields (prefer new over existing)
+        for field in ["job_title", "job_role", "company", "description", 
+                      "salary", "seniority", "posted_at", "closing_date"]:
+            merged_data[field] = new_data[field] or existing.get(field)
+        
+        # Execute update
+        self.supabase.table("job_postings") \
+            .update(merged_data) \
+            .eq("id", existing["id"]) \
+            .execute()
+        
+        return {
+            "id": existing["id"],
+            "status": "updated",
+            "fingerprint": fingerprint
+        }
+    
+    def _insert_new_job(self, data: Dict, fingerprint: str) -> Dict[str, Any]:
+        """Insert a new job posting"""
+        self.logger.info(f"Inserting new job: {data['job_title']}")
+        
+        insert_data = {
+            **data,
+            "fingerprint": fingerprint,
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat(),
+        }
+        
+        result = self.supabase.table("job_postings") \
+            .insert(insert_data) \
+            .execute()
+        
+        return {
+            "id": result.data[0]["id"],
+            "status": "inserted",
+            "fingerprint": fingerprint
+        }
+    
+    def _merge_locations(
+        self, 
+        current: List[Dict], 
+        new: List[Dict]
+    ) -> List[Dict]:
+        """Merge location lists, removing duplicates based on city+state"""
+        if not isinstance(current, list):
+            current = []
+        
+        combined = current + new
+        unique_locs = []
+        seen = set()
+        
+        for loc in combined:
+            key = (loc.get("city"), loc.get("state"))
+            if key not in seen:
+                seen.add(key)
+                unique_locs.append(loc)
+        
+        return unique_locs
+    
+    def _merge_unique_values(self, current: List, new: List) -> List:
+        """Merge two lists and remove duplicates"""
+        return list(set(current + new))
 
     def check_existing_urls(self, urls: List[str], only_complete: bool = False) -> List[str]:
         """

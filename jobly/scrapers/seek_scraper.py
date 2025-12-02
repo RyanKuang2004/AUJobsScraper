@@ -1,6 +1,7 @@
 import os
 import asyncio
 import random
+from typing import Optional
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
 from jobly.scrapers.base_scraper import BaseScraper
@@ -59,8 +60,7 @@ class SeekScraper(BaseScraper):
                         
                         self.logger.info(f"Found {len(new_links)} NEW jobs on page {page_num}")
                         
-                        for job_url in new_links:
-                            await self._process_job(page, job_url)
+                        await self.process_jobs_concurrently(context, new_links)
                                 
                     except Exception as e:
                         self.logger.error(f"Error processing page {page_num}: {e}")
@@ -107,75 +107,73 @@ class SeekScraper(BaseScraper):
             await page.goto(job_url, wait_until="domcontentloaded")
             await asyncio.sleep(random.uniform(1, 3))
             
-            job_content = await page.content()
-            job_soup = BeautifulSoup(job_content, 'lxml')
+            # Extract all fields
+            content = await page.content()
+            soup = BeautifulSoup(content, 'lxml')
             
-            # Extract Title
-            title_elem = job_soup.find("h1", attrs={"data-automation": "job-detail-title"})
-            job_title = title_elem.text.strip() if title_elem else "Unknown Title"  # Original for fingerprinting
-            # Extract cleaned job role from original title
-            job_role = extract_job_role(job_title)
-            
-            # Extract Company
-            company_elem = job_soup.find("span", attrs={"data-automation": "advertiser-name"})
-            company = company_elem.text.strip() if company_elem else "Unknown Company"
-            
-            # Extract Location
-            location_elem = job_soup.find("span", attrs={"data-automation": "job-detail-location"})
-            location_str = location_elem.text.strip() if location_elem else "Australia"
-            
-            # Normalize locations to structured format
-            locations = normalize_locations([location_str])
-            
-            # Extract Salary
-            salary_elem = job_soup.find("span", attrs={"data-automation": "job-detail-salary"})
-            salary = salary_elem.text.strip() if salary_elem else None
-            
-            # Extract Description
-            description_elem = job_soup.find("div", attrs={"data-automation": "jobAdDetails"})
-            raw_content = str(description_elem) if description_elem else str(job_soup.find("body"))
-            description = remove_html_tags(raw_content)
-
-            # Extract seniority level from original title
-            seniority = determine_seniority(job_title)
-
-            # Extract posted_at
-            posted_at = None
-            meta_elements = job_soup.find_all("span", class_="_2953uf0 _1cvgfrq50 eytv690 eytv691 eytv691u eytv696 _1lwlriv4")
-            for elem in meta_elements:
-                if "Posted" in elem.text:
-                    raw_text = elem.text.strip()
-                    posted_at = calculate_posted_date(raw_text)
-                    break
-            
-            self.logger.info(f"Extracted: {job_role} at {company}")
-
-            # LLM Analysis is now handled by a separate process (job_processor.py)
-            llm_analysis = None
-
-            job_data = {
-                "job_title": job_title,  # Original title for fingerprinting
-                "job_role": job_role,  # Cleaned role for display
-                "company": company,
-                "locations": locations,
-                "source_urls": [job_url],
-                "description": description,
-                "salary": salary,
-                "seniority": seniority,
-                "llm_analysis": llm_analysis,
-                "platforms": ["seek"],
-                "posted_at": posted_at,
-                "closing_date":  None
+            extracted = {
+                "title": self._extract_title(soup),
+                "company": self._extract_company(soup),
+                "location": self._extract_location(soup),
+                "description": self._extract_description(soup),
+                "salary": self._extract_salary(soup),
+                "posted_at": self._extract_posted_date(soup),
             }
             
-            saved_job = self.save_job(job_data)
-            if saved_job:
-                self.logger.info(f"Saved job: {job_role}")
-
-            return job_data
+            # Build JobPosting using base class helper
+            job_posting = self._build_job_posting(
+                job_title=extracted["title"],
+                company=extracted["company"],
+                raw_locations=[extracted["location"]],
+                source_url=job_url,
+                description=extracted["description"],
+                salary=extracted.get("salary"),
+                posted_at=extracted.get("posted_at"),
+            )
+            
+            # Save to database
+            self.save_job(job_posting)
             
         except Exception as e:
-            self.logger.error(f"Error scraping job details {job_url}: {e}")
+            self.logger.error(f"Error scraping job {job_url}: {e}")
+    
+    def _extract_title(self, soup) -> str:
+        """Extract job title from page"""
+        elem = soup.find("h1", attrs={"data-automation": "job-detail-title"})
+        return elem.text.strip() if elem else "Unknown Title"
+    
+    def _extract_company(self, soup) -> str:
+        """Extract company name from page"""
+        elem = soup.find("span", attrs={"data-automation": "advertiser-name"})
+        return elem.text.strip() if elem else "Unknown Company"
+    
+    def _extract_location(self, soup) -> str:
+        """Extract location from page"""
+        elem = soup.find("span", attrs={"data-automation": "job-detail-location"})
+        return elem.text.strip() if elem else "Australia"
+    
+    def _extract_salary(self, soup) -> Optional[str]:
+        """Extract salary from page"""
+        elem = soup.find("span", attrs={"data-automation": "job-detail-salary"})
+        return elem.text.strip() if elem else None
+    
+    def _extract_description(self, soup) -> str:
+        """Extract job description from page"""
+        elem = soup.find("div", attrs={"data-automation": "jobAdDetails"})
+        raw_content = str(elem) if elem else str(soup.find("body"))
+        return remove_html_tags(raw_content)
+    
+    def _extract_posted_date(self, soup) -> Optional[str]:
+        """Extract posted date from page"""
+        meta_elements = soup.find_all(
+            "span", 
+            class_="_2953uf0 _1cvgfrq50 eytv690 eytv691 eytv691u eytv696 _1lwlriv4"
+        )
+        for elem in meta_elements:
+            if "Posted" in elem.text:
+                raw_text = elem.text.strip()
+                return calculate_posted_date(raw_text)
+        return None
 
     def run(self):
         # Default run with config values
