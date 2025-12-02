@@ -110,77 +110,134 @@ _embedding_model = None
 _role_embeddings = None
 
 # Job role taxonomy mapping standard roles to keywords
+# IMPORTANT: Order matters! More specific roles are checked first to avoid misclassification.
+# AI/ML and specialized roles appear before generic "Software Engineer" category.
 ROLE_TAXONOMY = {
-    # Software Engineering & Development
-    "Software Engineer": ["software engineer", "developer", "programmer", "backend", "frontend", "application engineer", "app engineer"],
-    "Full Stack Developer": ["full stack", "fullstack", "javascript full stack", "typescript full stack"],
-    "Web Developer": ["web developer", "react developer", "angular developer", "vue developer", "php developer", "website designer", "frontend developer"],
-    "Mobile Developer": ["mobile developer", "ios developer", "android developer", "react native", "mobile app developer", "flutter"],
-    "Embedded Systems Engineer": ["embedded systems", "firmware engineer", "embedded software", "embedded engineer"],
-    "Game Developer": ["game developer", "game software engineer", "unity developer", "game engineer"],
+    # ========================================
+    # AI & ML (HIGHEST PRIORITY - Most Specific)
+    # ========================================
+    "AI Engineer": [
+        # Combined AI/ML terminology - should classify as AI Engineer per user requirement
+        "ai/ml engineer", "ai ml engineer", "ai / ml", "ai/ml", "ai & ml",
+        # AI-focused roles
+        "ai engineer", "ai software engineer", "ai developer", "ai software developer", 
+        "ai programmer", "artificial intelligence engineer",
+        # Generative AI
+        "generative ai", "genai engineer", "gen ai", "generative ai engineer",
+        # AI Platform/Infrastructure
+        "ai platform engineer", "ai devops", "ai infrastructure",
+        # General AI
+        "artificial intelligence",
+    ],
+    "Machine Learning Engineer": [
+        "machine learning engineer", "ml engineer", "machine learning developer", "ml developer",
+        "mlops engineer", "mlops", "deep learning engineer", "ml software engineer",
+    ],
+    "NLP Engineer": [
+        "nlp engineer", "natural language processing", "conversational ai", 
+        "prompt engineer", "llm engineer", "large language model",
+    ],
+    "Research Scientist": [
+        "research scientist", "computer scientist", "applied scientist",
+        "research fellow", "computational science", "research assistant",
+    ],
     
-    # Data & Analytics
-    "Data Engineer": ["data engineer", "big data", "etl developer", "azure data engineer", "data pipeline"],
+    # ========================================
+    # Data & Analytics (High Priority - Specific)
+    # ========================================
     "Data Scientist": ["data scientist", "applied scientist", "spatial data scientist"],
+    "Data Engineer": ["data engineer", "big data", "etl developer", "azure data engineer", "data pipeline"],
     "Data Analyst": ["data analyst", "reporting analyst", "insights analyst", "commercial analyst"],
     "Business Intelligence Analyst": ["business intelligence", "bi analyst", "bi developer", "power bi", "tableau", "analytics"],
     "Data Architect": ["data architect", "data modeler", "database architect"],
     "Database Administrator": ["database administrator", "database developer", "sql developer", "dba"],
     
-    # AI & ML
-    "AI Engineer": ["ai engineer", "ai software engineer", "generative ai", "ai devops", "artificial intelligence"],
-    "Machine Learning Engineer": ["machine learning engineer", "ml engineer", "mlops", "deep learning engineer"],
-    "Research Scientist": ["research scientist", "computer scientist", "research fellow", "computational science", "research assistant"],
-    "NLP Engineer": ["nlp engineer", "natural language processing", "conversational ai", "prompt engineer"],
-    
-    # Infrastructure, Cloud & DevOps
+    # ========================================
+    # Infrastructure, Cloud & DevOps (Medium-High Priority)
+    # ========================================
     "DevOps Engineer": ["devops engineer", "site reliability engineer", "sre", "ci/cd engineer", "devsecops"],
     "Cloud Engineer": ["cloud engineer", "azure engineer", "aws engineer", "cloud architect", "solutions engineer", "gcp engineer"],
     "Platform Engineer": ["platform engineer", "infrastructure engineer", "systems engineer"],
     "Systems Administrator": ["systems administrator", "it support", "application support", "service desk", "sysadmin"],
     
+    # ========================================
+    # Security (Medium Priority)
+    # ========================================
+    "Cyber Security Engineer": ["cyber security", "security analyst", "infosec", "detection engineer", "security engineer", "cybersecurity"],
+    
+    # ========================================
+    # QA & Testing (Medium Priority)
+    # ========================================
+    "QA Engineer": ["qa engineer", "test engineer", "software tester", "automation engineer", "quality assurance", "test automation"],
+    
+    # ========================================
+    # Specialized Engineering (Medium Priority)
+    # ========================================
+    "Embedded Systems Engineer": ["embedded systems", "firmware engineer", "embedded software", "embedded engineer"],
+    "Game Developer": ["game developer", "game software engineer", "unity developer", "game engineer"],
+    "Mobile Developer": ["mobile developer", "ios developer", "android developer", "react native", "mobile app developer", "flutter"],
+    "Web Developer": ["web developer", "react developer", "angular developer", "vue developer", "php developer", "website designer", "frontend developer"],
+    "Full Stack Developer": ["full stack", "fullstack", "javascript full stack", "typescript full stack"],
+    
+    # ========================================
+    # Generic Software Engineering (LOWER Priority - Catch-all)
+    # ========================================
+    "Software Engineer": ["software engineer", "developer", "programmer", "backend", "frontend", "application engineer", "app engineer"],
+    
+    # ========================================
     # Management & Strategy
+    # ========================================
     "Engineering Manager": ["engineering manager", "head of engineering", "development manager", "team lead", "cto", "chief technology officer"],
     "Product Manager": ["product manager", "product owner", "digital product manager"],
     "Business Analyst": ["business analyst", "technical business analyst", "process analyst"],
     "Solutions Architect": ["solutions architect", "enterprise architect", "technical architect", "solution architect"],
     
-    # QA & Testing
-    "QA Engineer": ["qa engineer", "test engineer", "software tester", "automation engineer", "quality assurance", "test automation"],
-    
-    # Security
-    "Cyber Security Engineer": ["cyber security", "security analyst", "infosec", "detection engineer", "security engineer", "cybersecurity"],
-    
+    # ========================================
     # Specialized/Niche
+    # ========================================
     "Quantitative Analyst": ["quantitative analyst", "quant", "actuary", "algorithmic trader"],
     "GIS Analyst": ["gis analyst", "gis", "spatial analyst", "geospatial"],
     "Technical Writer": ["technical writer", "documentation engineer"],
     "Sales Engineer": ["sales engineer", "field application engineer", "presales engineer"],
     
-    # Executive & Strategic Leadership (Above standard Management)
+    # ========================================
+    # Executive & Leadership
+    # ========================================
     "Executive Leadership": ["head of", "director of", "chief", "partner", "vp", "vice president", "executive"],
     "Data Leadership": ["head of data", "manager data", "data manager", "data lead", "master data", "mdm"],
-    "Technical Lead": ["tech lead", "technical lead", "team lead", "lead developer", "delivery lead", "initiative lead"],
+    "Technical Lead": ["tech lead", "technical lead", "lead developer", "delivery lead", "initiative lead"],
 
+    # ========================================
     # Academic & Education
+    # ========================================
     "Lecturer": ["lecturer", "professor", "phd", "research fellow", "faculty", "teaching staff", "academic", "tutor"],
 
+    # ========================================
     # Health & Clinical Informatics
+    # ========================================
     "Health Informatics": ["clinical coder", "clinical data", "emr", "casemix", "health data", "medical coder", "cognitive rater"],
 
+    # ========================================
     # Data Governance, Compliance & Strategy
+    # ========================================
     "Data Governance & Compliance": ["data governance", "data protection", "data integrity", "privacy", "compliance", "audit", "risk", "policy"],
     "Strategy & Transformation": ["digital transformation", "strategy", "roadmap", "change manager", "business development"],
 
+    # ========================================
     # Consulting & Implementation
+    # ========================================
     "Technical Consultant": ["consultant", "advisor", "implementation specialist", "integration specialist", "solution specialist"],
     "Graduate Program": ["graduate", "cadet", "intern", "trainee", "early career", "digital futures"],
 
+    # ========================================
     # Specialized Operations & Support
+    # ========================================
     "Technical Support": ["support advisor", "help desk", "service desk", "support specialist", "technical support"],
     "Operations & Logistics": ["coordinator", "scheduler", "logistics", "weighbridge", "gatehouse"],
     
+    # ========================================
     # Niche / Other Tech
+    # ========================================
     "SEO & Digital Marketing": ["seo", "search engine optimization", "digital marketing", "marketing technology", "martech"],
     "Intelligence & Security": ["intelligence officer", "tspv", "security clearance", "defense"],
 }
@@ -239,20 +296,20 @@ def extract_job_role(title: str, company_name: str = None, similarity_threshold:
     if not cleaned:
         return "Specialized"
     
-    # Step 2: Keyword matching (longest/most specific first)
-    best_match = None
-    best_match_length = 0
+    # Step 2: Keyword matching with category priority
+    # Categories are ordered by priority in ROLE_TAXONOMY (AI/ML first, Software Engineer later)
+    # For each category, check if ANY keyword matches. If yes, pick the longest match in that category.
+    # This ensures higher-priority categories (AI/ML) are checked before lower-priority ones (Software Engineer)
     
     for role, keywords in ROLE_TAXONOMY.items():
-        for keyword in keywords:
-            if keyword in cleaned:
-                # Prefer longer, more specific matches
-                if len(keyword) > best_match_length:
-                    best_match = role
-                    best_match_length = len(keyword)
-    
-    if best_match:
-        return best_match
+        # Find all matching keywords for this role category
+        matches = [(kw, len(kw)) for kw in keywords if kw in cleaned]
+        
+        if matches:
+            # Pick the longest keyword match within this category
+            best_keyword = max(matches, key=lambda x: x[1])[0]
+            return role
+
     
     # Step 3: Embedding fallback
     try:

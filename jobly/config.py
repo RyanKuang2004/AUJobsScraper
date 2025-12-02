@@ -38,6 +38,19 @@ class ScraperSettings(BaseSettings):
         ],
         description="Job search keywords"
     )
+
+    gradconnection_keywords: List[str] = Field(
+        default=[
+            "software engineer",
+            "software developer",
+            "data science",
+            "machine learning engineer",
+            "ai engineer",
+            "data analyst"
+        ],
+        description="GradConnection Job search keywords"
+    )
+    
     max_pages: int = Field(
         default=20,
         description="Maximum pages to scrape per keyword"

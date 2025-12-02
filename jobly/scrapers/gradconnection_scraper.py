@@ -25,7 +25,7 @@ class GradConnectionScraper(BaseScraper):
     async def scrape(self, initial_run: bool = False):
         self.logger.info("Starting GradConnection Scraper...")
         
-        terms = settings.scraper.search_keywords
+        terms = settings.scraper.gradconnection_keywords
         limit = settings.scraper.max_pages
         
         async with async_playwright() as p:
