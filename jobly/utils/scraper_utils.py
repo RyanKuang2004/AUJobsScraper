@@ -109,29 +109,38 @@ def extract_job_role(title: str, company_name: str = None, similarity_threshold:
     # Step 0: Early pattern matching for roles that would be affected by stop word removal
     # This catches patterns like "Graduate Program", "Internship Program", etc. BEFORE
     # stop words like "graduate", "program", "intern" are removed
+    # BUT only when there's no specific role mentioned (e.g., "Data Science Graduate Program" should extract "Data Scientist")
     title_lower = title.lower()
     
-    # Define early-match patterns that should be checked before stop word removal
-    # These patterns contain words that are in STOP_WORDS but are essential for classification
-    early_match_patterns = {
-        "Graduate Program": [
-            # Graduate program patterns
-            r'\bgraduate\s+program\b',
-            r'\bgrad\s+program\b', 
-            r'\bgraduate\s+development\s+programme\b',
-            r'\bgraduate\s+programme\b',
-            # Internship patterns (also map to Graduate Program per taxonomy)
-            r'\binternship\s+program\b',
-            r'\binternship\s+programme\b',
-            r'\bintern\s+program\b',
-        ],
-    }
+    # Check if title contains "graduate program" or "internship program"
+    has_graduate_program = bool(re.search(r'\b(graduate|grad)\s+(program|programme|development\s+programme)\b', title_lower))
+    has_internship_program = bool(re.search(r'\b(internship|intern)\s+(program|programme)\b', title_lower))
     
-    # Check early patterns
-    for role, patterns in early_match_patterns.items():
-        for pattern in patterns:
-            if re.search(pattern, title_lower):
-                return role
+    if has_graduate_program or has_internship_program:
+        # Check if there's a specific role keyword in the title
+        # Look for role-related words that indicate a specific discipline
+        role_indicators = [
+            # Technical roles
+            'data', 'software', 'cyber', 'security', 'cloud', 'devops',
+            'engineer', 'developer', 'analyst', 'scientist', 'architect',
+            # Specific technologies/domains
+            'machine learning', 'artificial intelligence', 'ai', 'ml',
+            'frontend', 'backend', 'full stack', 'fullstack',
+            'mobile', 'web', 'ios', 'android',
+            'qa', 'test', 'automation',
+            # Business/management
+            'business', 'product', 'project', 'consulting'
+        ]
+        
+        has_specific_role = False
+        for indicator in role_indicators:
+            if indicator in title_lower:
+                has_specific_role = True
+                break
+        
+        # Only classify as Graduate Program if no specific role was found
+        if not has_specific_role:
+            return "Graduate Program"
     
     # Step 1: Clean the title
     cleaned = title.lower()
