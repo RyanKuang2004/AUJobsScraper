@@ -622,8 +622,8 @@ def normalize_locations(locations: list[str]) -> list[dict[str, str]]:
             if city_candidate.lower() in CITY_TO_STATE:
                 city = city_candidate.title()
             else:
-                # Not in our known cities, skip this location
-                continue
+                # Not in our known cities, but we have a state - use empty city
+                city = ""
         else:
             # No state abbreviation found, try to identify city from the string
             # Remove common prefixes and check if it's a known city

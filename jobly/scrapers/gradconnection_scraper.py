@@ -13,6 +13,7 @@ from jobly.utils.scraper_utils import (
     extract_salary_from_text,
     determine_seniority,
     normalize_locations,
+    extract_job_role,  # Added for job role extraction
 )
 
 
@@ -187,7 +188,11 @@ class GradConnectionScraper(BaseScraper):
             # Extract Title
             title_elem = job_soup.select_one("h1.employers-profile-h1")
             if title_elem:
-                title = title_elem.text.strip()
+                job_title = title_elem.text.strip()  # Original title
+                job_role = extract_job_role(job_title)  # Cleaned role for display
+            else:
+                job_title = "Unknown Title"
+                job_role = "Other"
             
             # Extract Company
             company_elem = job_soup.select_one("h1.employers-panel-title")
@@ -316,7 +321,7 @@ class GradConnectionScraper(BaseScraper):
                 else:
                     description = remove_html_tags(str(job_soup.body))
             
-            self.logger.info(f"Extracted: {title} at {company}")
+            self.logger.info(f"Extracted: {job_role} at {company}")
             self.logger.info(f"Location: {location}, Salary: {salary}, Deadline: {application_deadline}")
 
             # Parse closing date if available
@@ -336,13 +341,14 @@ class GradConnectionScraper(BaseScraper):
             locations = normalize_locations(location_list)
 
             job_data = {
-                "job_title": title,
+                "job_title": job_title,  # Original title for fingerprinting
+                "job_role": job_role,  # Cleaned role for display
                 "company": company,
                 "locations": locations,
                 "source_urls": [job_url],
                 "description": description,
                 "salary": salary,
-                "seniority": "Junior",
+                "seniority": "Junior",  # Hardcoded for graduate/internship platform
                 "llm_analysis": None,
                 "platforms": ["gradconnection"],
                 "posted_at": posted_at,
@@ -351,7 +357,7 @@ class GradConnectionScraper(BaseScraper):
             
             saved_job = self.save_job(job_data)
             if saved_job:
-                self.logger.info(f"Saved job: {title}")
+                self.logger.info(f"Saved job: {job_role}")
 
             return job_data
             

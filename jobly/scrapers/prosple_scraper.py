@@ -124,7 +124,8 @@ class ProspleScraper(BaseScraper):
             soup = BeautifulSoup(content, 'lxml')
             
             # Initialize fields
-            title = "Unknown Title"
+            job_title = "Unknown Title"  # Original title
+            job_role = "Other"  # Cleaned role
             company = "Unknown Company"
             description = ""
             salary = None
@@ -153,8 +154,8 @@ class ProspleScraper(BaseScraper):
             
             if json_data:
                 self.logger.info("Found JSON-LD JobPosting data")
-                title = json_data.get('title', title)
-                title = extract_job_role(title)
+                job_title = json_data.get('title', "Unknown Title")  # Original title
+                job_role = extract_job_role(job_title)  # Cleaned role
                 
                 hiring_org = json_data.get('hiringOrganization')
                 if isinstance(hiring_org, dict):
@@ -191,12 +192,14 @@ class ProspleScraper(BaseScraper):
             # 2. Fallback / Supplement with HTML Scraping
             
             # Title fallback / refinement (H1 often has more detail like "Start ASAP")
-            if title == "Unknown Title" or True: # Always check H1 as it might be better formatted
+            # Only use H1 if JSON-LD didn't provide title
+            if job_title == "Unknown Title":
                 h1_elem = soup.find("h1")
                 if h1_elem:
                     h1_text = h1_elem.text.strip()
                     if h1_text:
-                        title = extract_job_role(h1_text)
+                        job_title = h1_text  # Original title
+                        job_role = extract_job_role(job_title)  # Cleaned role
 
             # Company fallback
             if company == "Unknown Company":
@@ -238,13 +241,14 @@ class ProspleScraper(BaseScraper):
                 closing_date = json_data['validThrough']
             
             final_job_data = {
-                "job_title": title,
+                "job_title": job_title,  # Original title for fingerprinting
+                "job_role": job_role,  # Cleaned role for display
                 "company": company,
                 "locations": locations,
                 "source_urls": [job_url],
                 "description": description,
                 "salary": salary,
-                "seniority": "Junior",
+                "seniority": "Junior",  # Hardcoded for graduate/internship platform
                 "llm_analysis": None,
                 "platforms": ["prosple"],
                 "posted_at": posted_at,

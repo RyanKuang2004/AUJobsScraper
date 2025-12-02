@@ -112,9 +112,9 @@ class SeekScraper(BaseScraper):
             
             # Extract Title
             title_elem = job_soup.find("h1", attrs={"data-automation": "job-detail-title"})
-            raw_title = title_elem.text.strip() if title_elem else "Unknown Title"
-            # Clean the title using extract_job_role to remove noise
-            title = extract_job_role(raw_title)
+            job_title = title_elem.text.strip() if title_elem else "Unknown Title"  # Original for fingerprinting
+            # Extract cleaned job role from original title
+            job_role = extract_job_role(job_title)
             
             # Extract Company
             company_elem = job_soup.find("span", attrs={"data-automation": "advertiser-name"})
@@ -136,8 +136,8 @@ class SeekScraper(BaseScraper):
             raw_content = str(description_elem) if description_elem else str(job_soup.find("body"))
             description = remove_html_tags(raw_content)
 
-            # Extract seniority level from RAW title (before cleaning removes seniority keywords)
-            seniority = determine_seniority(raw_title)
+            # Extract seniority level from original title
+            seniority = determine_seniority(job_title)
 
             # Extract posted_at
             posted_at = None
@@ -148,14 +148,14 @@ class SeekScraper(BaseScraper):
                     posted_at = calculate_posted_date(raw_text)
                     break
             
-            self.logger.info(f"Extracted: {title} at {company}")
+            self.logger.info(f"Extracted: {job_role} at {company}")
 
             # LLM Analysis is now handled by a separate process (job_processor.py)
             llm_analysis = None
 
             job_data = {
-                "job_title": title,  # Cleaned title for display
-                "raw_job_title": raw_title,  # Original title for fingerprint generation
+                "job_title": job_title,  # Original title for fingerprinting
+                "job_role": job_role,  # Cleaned role for display
                 "company": company,
                 "locations": locations,
                 "source_urls": [job_url],
@@ -170,16 +170,16 @@ class SeekScraper(BaseScraper):
             
             saved_job = self.save_job(job_data)
             if saved_job:
-                self.logger.info(f"Saved job: {title}")
+                self.logger.info(f"Saved job: {job_role}")
 
             return job_data
             
         except Exception as e:
             self.logger.error(f"Error scraping job details {job_url}: {e}")
 
-    def run(self, initial_run: bool = False):
+    def run(self):
         # Default run with config values
-        asyncio.run(self.scrape(initial_run=initial_run))
+        asyncio.run(self.scrape())
 
 if __name__ == "__main__":
     scraper = SeekScraper()

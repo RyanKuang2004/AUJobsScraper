@@ -23,12 +23,12 @@ class JobDatabase(BaseDatabase):
         print(f"DEBUG: job_data keys: {job_data.keys()}")
         print(f"DEBUG: description length: {len(job_data.get('description', ''))}")
         company = job_data.get("company", "")
-        # Use raw_job_title for fingerprint if available, otherwise use job_title
+        # Use job_title (original title) for fingerprint generation
         title_for_fingerprint = job_data.get("job_title", "")
-        title_for_display = job_data.get("job_title", "") # Cleaned title for display
         fingerprint = self._generate_fingerprint(company, title_for_fingerprint)
         
         # Prepare list fields (ensure they are lists)
+        # Locations are already normalized by scrapers
         raw_locs = job_data.get("locations", [])
         if isinstance(raw_locs, str): raw_locs = [raw_locs]
         
@@ -36,8 +36,8 @@ class JobDatabase(BaseDatabase):
         if "location" in job_data and not raw_locs:
             raw_locs = [job_data["location"]]
             
-        # Normalize locations
-        new_locs = normalize_locations(raw_locs)
+        # Use locations as-is (already normalized by scrapers)
+        new_locs = raw_locs if isinstance(raw_locs, list) else [raw_locs]
         
         new_platforms = job_data.get("platforms", [])
         if isinstance(new_platforms, str): new_platforms = [new_platforms]
@@ -49,10 +49,8 @@ class JobDatabase(BaseDatabase):
         if "source_url" in job_data and not new_urls:
             new_urls = [job_data["source_url"]]
 
-        # Extract job role if not provided
-        job_role = job_data.get("job_role")
-        if not job_role:
-            job_role = extract_job_role(title_for_fingerprint, company)
+        # Job role should be provided by scrapers
+        job_role = job_data.get("job_role", "Other")
 
         # 2. Check for existing record
         existing = self.supabase.table("job_postings").select("*").eq("fingerprint", fingerprint).execute()
@@ -91,7 +89,7 @@ class JobDatabase(BaseDatabase):
                 # Update standard fields if they are missing in DB but present in new data
                 # or just overwrite? Usually overwrite or keep existing.
                 # Let's overwrite standard fields to keep fresh
-                "job_title": title_for_display or record.get("job_title"),
+                "job_title": job_data.get("job_title") or record.get("job_title"),
                 "company": company or record.get("company"),
                 "job_role": job_role or record.get("job_role"), # Prefer new role calculation
                 "description": job_data.get("description") or record.get("description"),
@@ -108,7 +106,7 @@ class JobDatabase(BaseDatabase):
             # --- INSERT ---
             insert_data = {
                 "fingerprint": fingerprint,
-                "job_title": title_for_display,
+                "job_title": job_data.get("job_title"),
                 "company": company,
                 "job_role": job_role,
                 "locations": new_locs,
