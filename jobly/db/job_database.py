@@ -24,7 +24,7 @@ class JobDatabase(BaseDatabase):
         print(f"DEBUG: description length: {len(job_data.get('description', ''))}")
         company = job_data.get("company", "")
         # Use raw_job_title for fingerprint if available, otherwise use job_title
-        title_for_fingerprint = job_data.get("raw_job_title") or job_data.get("job_title", "")
+        title_for_fingerprint = job_data.get("job_title", "")
         title_for_display = job_data.get("job_title", "") # Cleaned title for display
         fingerprint = self._generate_fingerprint(company, title_for_fingerprint)
         

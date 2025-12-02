@@ -12,7 +12,6 @@ from jobly.utils.scraper_utils import (
     remove_html_tags,
     extract_salary_from_text,
     determine_seniority,
-    extract_job_role,
     normalize_locations,
 )
 
@@ -189,7 +188,6 @@ class GradConnectionScraper(BaseScraper):
             title_elem = job_soup.select_one("h1.employers-profile-h1")
             if title_elem:
                 title = title_elem.text.strip()
-                title = extract_job_role(title)
             
             # Extract Company
             company_elem = job_soup.select_one("h1.employers-panel-title")
@@ -235,9 +233,9 @@ class GradConnectionScraper(BaseScraper):
                     self.logger.warning(f"Failed to parse JSON fields: {e}")
             
             # ===== FALLBACK STRATEGY: Extract from HTML =====
-            # Only use HTML extraction if JSON extraction failed
-            if not json_data or not location or location == "Australia":
-                self.logger.info("Falling back to HTML extraction")
+            # Use HTML extraction if JSON extraction failed OR if key fields are missing
+            if not json_data or not location or location == "Australia" or not application_deadline or not posted_at:
+                self.logger.info("Using HTML extraction (fallback or supplementary)")
                 
                 # Strategy 1: Standard Job Page (div.job-overview-container)
                 overview_container = job_soup.select_one("div.job-overview-container")
@@ -251,9 +249,10 @@ class GradConnectionScraper(BaseScraper):
                                 return dd.text.strip()
                         return None
 
-                    loc_text = get_detail("Locations")
-                    if loc_text:
-                        location = loc_text
+                    if not location or location == "Australia":
+                        loc_text = get_detail("Locations")
+                        if loc_text:
+                            location = loc_text
                     
                     if not salary:
                         sal_text = get_detail("Salary")
@@ -264,6 +263,11 @@ class GradConnectionScraper(BaseScraper):
                         closes_text = get_detail("Closes")
                         if closes_text:
                             application_deadline = closes_text
+
+                    if not posted_at:
+                        posted_text = get_detail("Posted")
+                        if posted_text:
+                            posted_at = posted_text
 
                 # Strategy 2: Campaign Style Page (ul.box-content)
                 else:
@@ -285,6 +289,8 @@ class GradConnectionScraper(BaseScraper):
                                 salary = value
                             elif "closing date" in label and not application_deadline:
                                 application_deadline = value
+                            elif "posted" in label and not posted_at:
+                                posted_at = value
                 
                 # Clean up "...show more" text if present (should not be needed with JSON extraction)
                 if location and ("...show more" in location.lower() or "show more" in location.lower()):
