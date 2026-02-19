@@ -9,6 +9,7 @@ from aujobsscraper.config import settings
 from aujobsscraper.utils.scraper_utils import (
     remove_html_tags,
     extract_salary_from_text,
+    normalize_salary,
     normalize_locations,
 )
 
@@ -16,7 +17,7 @@ class ProspleScraper(BaseScraper):
     def __init__(self):
         super().__init__("prosple")
         self.base_url = "https://au.prosple.com"
-        self.search_url_base = "https://au.prosple.com/search-jobs?locations=9692&study_fields=502&opportunity_types=1"
+        self.search_url_base = "https://au.prosple.com/search-jobs?locations=9692&defaults_applied=1&study_fields=506"
 
     async def scrape(self, skip_urls=None) -> list:
         self.logger.info("Starting Prosple Scraper...")
@@ -79,7 +80,11 @@ class ProspleScraper(BaseScraper):
             content = await page.content()
             soup = BeautifulSoup(content, 'lxml')
 
-            job_cards = soup.find_all("h2", class_="sc-dOfePm dyaRTx heading sc-692f12d5-0 bTRRDW")
+            job_cards = soup.find_all(
+                "a",
+                target="_blank",
+                href=lambda href: href and href.startswith("/graduate-employers/"),
+            )
 
             if not job_cards:
                 if "No matching search results" in content:
@@ -87,11 +92,7 @@ class ProspleScraper(BaseScraper):
                 return []
 
             jobs_data = []
-            for card_h2 in job_cards:
-                link_elem = card_h2.find("a", href=True)
-                if not link_elem:
-                    continue
-
+            for link_elem in job_cards:
                 link = link_elem['href']
                 if not link.startswith("http"):
                     base = self.base_url.rstrip('/')
@@ -203,21 +204,40 @@ class ProspleScraper(BaseScraper):
                     return locations
         return ["Australia"]
 
-    def _extract_salary(self, soup, json_data: Optional[Dict]) -> Optional[str]:
+    def _extract_salary(self, soup, json_data: Optional[Dict]) -> Optional[Dict[str, float]]:
         if json_data:
             base_salary = json_data.get('baseSalary')
             if base_salary:
                 if isinstance(base_salary, dict):
                     value = base_salary.get('value')
-                    if value:
-                        return str(value)
+                    if isinstance(value, dict):
+                        min_value = value.get('minValue')
+                        max_value = value.get('maxValue')
+                        if min_value is not None or max_value is not None:
+                            low = float(min_value if min_value is not None else max_value)
+                            high = float(max_value if max_value is not None else min_value)
+                            return {
+                                "annual_min": low,
+                                "annual_max": high,
+                            }
+                    if isinstance(value, (int, float)):
+                        amount = float(value)
+                        return {"annual_min": amount, "annual_max": amount}
+                    if isinstance(value, str):
+                        normalized = normalize_salary(value)
+                        if normalized:
+                            return normalized
                 elif isinstance(base_salary, str):
-                    return base_salary
+                    normalized = normalize_salary(base_salary)
+                    if normalized:
+                        return normalized
         description = self._extract_description(soup, json_data)
         if description:
-            salary = extract_salary_from_text(description)
-            if salary:
-                return salary
+            raw_salary = extract_salary_from_text(description)
+            if raw_salary:
+                normalized = normalize_salary(raw_salary)
+                if normalized:
+                    return normalized
         return None
 
     def _extract_description(self, soup, json_data: Optional[Dict]) -> str:
