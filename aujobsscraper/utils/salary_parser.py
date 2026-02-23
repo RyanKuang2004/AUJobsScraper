@@ -15,6 +15,8 @@ class SalaryParser:
         r'\$?\s*([\d,]+)(?:k|K)?\s*(?:per|/)?\s*(hour|hr|week|month|year|annual|annum)?',
         re.IGNORECASE
     )
+    MAX_SENTENCES_TO_SEARCH = 5
+    MAX_CHARS_TO_SEARCH = 1000
 
     @staticmethod
     def extract_salary(description: str) -> Optional[Dict[str, float]]:
@@ -32,8 +34,11 @@ class SalaryParser:
         # Clean escaped HTML characters
         cleaned = description.replace('\\$', '$').replace('\\-', '-').replace('\\.', '.')
 
+        # Limit search to first few sentences
+        search_text = SalaryParser._get_first_sentences(cleaned)
+
         # Try range pattern first
-        range_match = SalaryParser._extract_range(cleaned)
+        range_match = SalaryParser._extract_range(search_text)
         if range_match:
             min_val, max_val, interval = range_match
             annual_min = SalaryParser._to_annual(min_val, interval)
@@ -44,7 +49,7 @@ class SalaryParser:
             }
 
         # Try single value pattern
-        single_match = SalaryParser._extract_single_value(cleaned)
+        single_match = SalaryParser._extract_single_value(search_text)
         if single_match:
             val, interval = single_match
             annual = SalaryParser._to_annual(val, interval)
@@ -132,6 +137,35 @@ class SalaryParser:
         if 'year' in text or '/yr' in text or 'annual' in text or 'annum' in text:
             return 'yearly'
         return 'yearly'  # Default
+
+    @staticmethod
+    def _get_first_sentences(text: str) -> str:
+        """Extract first few sentences from text for salary search.
+
+        Returns:
+            First N sentences or first N characters, whichever is shorter
+        """
+        # Limit by character count first
+        if len(text) <= SalaryParser.MAX_CHARS_TO_SEARCH:
+            return text
+
+        # Try to split by sentence boundaries
+        sentences = []
+        current = text[:SalaryParser.MAX_CHARS_TO_SEARCH * 2]  # Look a bit further
+
+        # Split by common sentence delimiters
+        for delimiter in ['.\n', '!\n', '?\n', '.\n\n', '. ', '! ', '? ']:
+            if delimiter in current:
+                split = current.split(delimiter, SalaryParser.MAX_SENTENCES_TO_SEARCH)
+                sentences = split
+                break
+
+        if not sentences:
+            # Fallback to character limit
+            return text[:SalaryParser.MAX_CHARS_TO_SEARCH]
+
+        result = delimiter.join(sentences[:SalaryParser.MAX_SENTENCES_TO_SEARCH])
+        return result[:SalaryParser.MAX_CHARS_TO_SEARCH]
 
     @staticmethod
     def _to_annual(amount: float, interval: str) -> float:

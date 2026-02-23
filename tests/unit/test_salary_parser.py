@@ -90,3 +90,31 @@ def test_extract_salary_single_value_monthly():
     assert result is not None
     assert result["annual_min"] == 96000.0  # 8000 * 12
     assert result["annual_max"] == 96000.0
+
+
+def test_extract_salary_only_from_first_sentences():
+    long_desc = (
+        "$80,000 per year\n\n"
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
+        "This is a very long job description with many sentences. "
+        "There is another mention of $100,000 here that should not be picked up "
+        "because it's not in the first few sentences."
+    )
+    result = SalaryParser.extract_salary(long_desc)
+    assert result is not None
+    assert result["annual_min"] == 80000.0
+    assert result["annual_max"] == 80000.0
+
+
+def test_extract_salary_from_line_list():
+    # Mimic jobspy description format with bullet points
+    description = (
+        "* Executive Level 1 (SITOC)\n"
+        "* $121,755 - $132,713 + 15.4% super\n"
+        "* Adelaide, Brisbane, Canberra\n\n"
+        "This is rest of the description..."
+    )
+    result = SalaryParser.extract_salary(description)
+    assert result is not None
+    assert result["annual_min"] == 121755.0
+    assert result["annual_max"] == 132713.0
