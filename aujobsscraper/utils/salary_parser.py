@@ -17,6 +17,8 @@ class SalaryParser:
     )
     MAX_SENTENCES_TO_SEARCH = 5
     MAX_CHARS_TO_SEARCH = 1000
+    MIN_REASONABLE_SALARY = 10.0  # $10 minimum
+    MAX_REASONABLE_SALARY = 1000000.0  # $1M maximum
 
     @staticmethod
     def extract_salary(description: str) -> Optional[Dict[str, float]]:
@@ -43,20 +45,24 @@ class SalaryParser:
             min_val, max_val, interval = range_match
             annual_min = SalaryParser._to_annual(min_val, interval)
             annual_max = SalaryParser._to_annual(max_val, interval)
-            return {
-                "annual_min": min(annual_min, annual_max),
-                "annual_max": max(annual_min, annual_max),
-            }
+
+            if SalaryParser._is_reasonable_salary(annual_min) and SalaryParser._is_reasonable_salary(annual_max):
+                return {
+                    "annual_min": min(annual_min, annual_max),
+                    "annual_max": max(annual_min, annual_max),
+                }
 
         # Try single value pattern
         single_match = SalaryParser._extract_single_value(search_text)
         if single_match:
             val, interval = single_match
             annual = SalaryParser._to_annual(val, interval)
-            return {
-                "annual_min": annual,
-                "annual_max": annual,
-            }
+
+            if SalaryParser._is_reasonable_salary(annual):
+                return {
+                    "annual_min": annual,
+                    "annual_max": annual,
+                }
 
         return None
 
@@ -166,6 +172,20 @@ class SalaryParser:
 
         result = delimiter.join(sentences[:SalaryParser.MAX_SENTENCES_TO_SEARCH])
         return result[:SalaryParser.MAX_CHARS_TO_SEARCH]
+
+    @staticmethod
+    def _is_reasonable_salary(annual_amount: float) -> bool:
+        """Check if salary is within reasonable bounds.
+
+        Args:
+            annual_amount: Annualized salary amount
+
+        Returns:
+            True if salary is reasonable, False otherwise
+        """
+        return (
+            SalaryParser.MIN_REASONABLE_SALARY <= annual_amount <= SalaryParser.MAX_REASONABLE_SALARY
+        )
 
     @staticmethod
     def _to_annual(amount: float, interval: str) -> float:

@@ -118,3 +118,29 @@ def test_extract_salary_from_line_list():
     assert result is not None
     assert result["annual_min"] == 121755.0
     assert result["annual_max"] == 132713.0
+
+
+def test_extract_salary_rejects_zero():
+    description = "$0 per year"
+    result = SalaryParser.extract_salary(description)
+    assert result is None
+
+
+def test_extract_salary_rejects_negative():
+    description = "-$50,000 per year"
+    result = SalaryParser.extract_salary(description)
+    assert result is None
+
+
+def test_extract_salary_rejects_excessive():
+    description = "$10,000,000 per year"
+    result = SalaryParser.extract_salary(description)
+    assert result is None
+
+
+def test_extract_salary_accepts_reasonable_range():
+    description = "$50,000 - $500,000 per year"
+    result = SalaryParser.extract_salary(description)
+    assert result is not None
+    assert result["annual_min"] == 50000.0
+    assert result["annual_max"] == 500000.0
