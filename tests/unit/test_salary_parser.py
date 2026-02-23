@@ -50,3 +50,19 @@ def test_extract_salary_range_with_to():
     assert result is not None
     assert result["annual_min"] == 76000.0
     assert result["annual_max"] == 85000.0
+
+
+def test_extract_salary_with_escaped_dollar():
+    description = "* Executive Level 1 (SITOC)\n* \\$121,755 \\- \\$132,713 \\+ 15\\.4% super"
+    result = SalaryParser.extract_salary(description)
+    assert result is not None
+    assert result["annual_min"] == 121755.0
+    assert result["annual_max"] == 132713.0
+
+
+def test_extract_salary_with_escaped_hyphen():
+    description = "\\$76,000 \\- \\$85,000 per year"
+    result = SalaryParser.extract_salary(description)
+    assert result is not None
+    assert result["annual_min"] == 76000.0
+    assert result["annual_max"] == 85000.0

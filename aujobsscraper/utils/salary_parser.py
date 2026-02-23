@@ -24,8 +24,11 @@ class SalaryParser:
         if not description or not isinstance(description, str):
             return None
 
+        # Clean escaped HTML characters
+        cleaned = description.replace('\\$', '$').replace('\\-', '-').replace('\\.', '.')
+
         # Try range pattern first
-        range_match = SalaryParser._extract_range(description)
+        range_match = SalaryParser._extract_range(cleaned)
         if range_match:
             min_val, max_val, interval = range_match
             annual_min = SalaryParser._to_annual(min_val, interval)
