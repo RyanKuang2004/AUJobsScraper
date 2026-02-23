@@ -66,3 +66,27 @@ def test_extract_salary_with_escaped_hyphen():
     assert result is not None
     assert result["annual_min"] == 76000.0
     assert result["annual_max"] == 85000.0
+
+
+def test_extract_salary_single_value_with_dollar():
+    description = "$100,000 per year"
+    result = SalaryParser.extract_salary(description)
+    assert result is not None
+    assert result["annual_min"] == 100000.0
+    assert result["annual_max"] == 100000.0
+
+
+def test_extract_salary_single_value_hourly():
+    description = "$50 per hour"
+    result = SalaryParser.extract_salary(description)
+    assert result is not None
+    assert result["annual_min"] == 104000.0  # 50 * 2080
+    assert result["annual_max"] == 104000.0
+
+
+def test_extract_salary_single_value_monthly():
+    description = "$8,000 per month"
+    result = SalaryParser.extract_salary(description)
+    assert result is not None
+    assert result["annual_min"] == 96000.0  # 8000 * 12
+    assert result["annual_max"] == 96000.0

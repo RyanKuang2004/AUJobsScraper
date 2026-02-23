@@ -10,6 +10,11 @@ class SalaryParser:
         r'\$?\s*([\d,]+)\s*[-–to]+\s*\$?([\d,]+)',
         re.IGNORECASE
     )
+    # Single value pattern: $X
+    SINGLE_VALUE_PATTERN = re.compile(
+        r'\$?\s*([\d,]+)(?:k|K)?\s*(?:per|/)?\s*(hour|hr|week|month|year|annual|annum)?',
+        re.IGNORECASE
+    )
 
     @staticmethod
     def extract_salary(description: str) -> Optional[Dict[str, float]]:
@@ -36,6 +41,16 @@ class SalaryParser:
             return {
                 "annual_min": min(annual_min, annual_max),
                 "annual_max": max(annual_min, annual_max),
+            }
+
+        # Try single value pattern
+        single_match = SalaryParser._extract_single_value(cleaned)
+        if single_match:
+            val, interval = single_match
+            annual = SalaryParser._to_annual(val, interval)
+            return {
+                "annual_min": annual,
+                "annual_max": annual,
             }
 
         return None
@@ -67,6 +82,36 @@ class SalaryParser:
 
         interval = SalaryParser._detect_interval(context)
         return (min_val, max_val, interval)
+
+    @staticmethod
+    def _extract_single_value(text: str) -> Optional[tuple[float, str]]:
+        """Extract single salary value and interval from text.
+
+        Returns:
+            Tuple of (value, interval) or None
+        """
+        match = SalaryParser.SINGLE_VALUE_PATTERN.search(text)
+        if not match:
+            return None
+
+        val_str = match.group(1).replace(',', '')
+
+        try:
+            val = float(val_str)
+        except ValueError:
+            return None
+
+        # Check for k/K suffix (e.g., 80k -> 80000)
+        if 'k' in match.group(0).lower():
+            val *= 1000
+
+        # Look for interval in surrounding text
+        start = max(0, match.start() - 50)
+        end = min(len(text), match.end() + 50)
+        context = text[start:end].lower()
+
+        interval = SalaryParser._detect_interval(context)
+        return (val, interval)
 
     @staticmethod
     def _detect_interval(text: str) -> str:
