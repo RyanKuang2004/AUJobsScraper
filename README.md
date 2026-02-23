@@ -28,6 +28,7 @@ Run a scraper module directly:
 python -m aujobsscraper.scrapers.seek_scraper
 python -m aujobsscraper.scrapers.gradconnection_scraper
 python -m aujobsscraper.scrapers.prosple_scraper
+python -m aujobsscraper.scrapers.indeedscraper
 ```
 
 **Configuration**

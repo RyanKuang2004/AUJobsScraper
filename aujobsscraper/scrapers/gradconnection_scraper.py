@@ -10,6 +10,7 @@ from aujobsscraper.config import settings
 from aujobsscraper.utils.scraper_utils import (
     remove_html_tags,
     extract_salary_from_text,
+    normalize_salary,
     normalize_locations,
 )
 
@@ -100,7 +101,10 @@ class GradConnectionScraper(BaseScraper):
             self.logger.error(f"Error getting job links from {url}: {e}")
             return []
 
-    async def _process_job(self, page: Page, job_url: str):
+    async def _process_job(self, page: Page, job_url: str | Dict[str, Any]):
+        if isinstance(job_url, dict):
+            job_url = job_url.get("url", "")
+
         try:
             self.logger.info(f"Scraping Job: {job_url}")
             await page.goto(job_url, wait_until="domcontentloaded")
@@ -210,19 +214,47 @@ class GradConnectionScraper(BaseScraper):
                     return [loc.strip() for loc in value.split(",")]
         return ["Australia"]
 
-    def _extract_salary(self, soup, json_data: Optional[Dict]) -> Optional[str]:
+    def _extract_salary(self, soup, json_data: Optional[Dict]) -> Optional[Dict[str, float]]:
         if json_data:
             campaign = json_data.get("campaignstore", {}).get("campaign", {})
             salary = campaign.get("salary")
             if salary:
-                return salary
+                if isinstance(salary, dict):
+                    min_salary = salary.get("min_salary")
+                    max_salary = salary.get("max_salary")
+
+                    if min_salary is not None or max_salary is not None:
+                        salary_text = f"{min_salary or ''} - {max_salary or ''}".strip(" -")
+                        normalized = normalize_salary(salary_text)
+                        if normalized:
+                            return normalized
+
+                    details = salary.get("details")
+                    if isinstance(details, str) and details.strip():
+                        normalized = normalize_salary(details)
+                        if normalized:
+                            return normalized
+
+                if isinstance(salary, str):
+                    normalized = normalize_salary(salary)
+                    if normalized:
+                        return normalized
         overview = soup.select_one("div.job-overview-container")
         if overview:
             dt = overview.find("dt", string=lambda text: text and "Salary" in text)
             if dt:
                 dd = dt.find_next_sibling("dd")
                 if dd:
-                    return dd.text.strip()
+                    normalized = normalize_salary(dd.text.strip())
+                    if normalized:
+                        return normalized
+        description = self._extract_description(soup)
+        if description:
+            raw_salary = extract_salary_from_text(description)
+            if raw_salary:
+                normalized = normalize_salary(raw_salary)
+                if normalized:
+                    return normalized
         return None
 
     def _extract_description(self, soup) -> str:
