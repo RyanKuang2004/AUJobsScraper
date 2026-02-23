@@ -62,3 +62,58 @@ def test_extract_salary_skips_parser_when_jobspy_fields_present():
         assert result is not None
         assert result["annual_min"] == 50000.0
         assert result["annual_max"] == 60000.0
+
+
+def test_format_jobpost_with_salary_in_description():
+    """Test full job posting flow with salary in description."""
+    scraper = IndeedScraper(search_term="test")
+
+    job_post = {
+        "title": "Software Developer",
+        "company": "W.D.T. Engineers Pty Ltd",
+        "description": (
+            "**Boilermaker/Metal Fabricator**\n\n"
+            "**W.D.T. Engineers Pty Ltd**\n\n"
+            "**$76,000 \\- $85,000 per year \\+ Superannuation**\n\n"
+            "**Permanent, Full-time (38 hours per week)**\n\n"
+            "**Acacia Ridge QLD 4110**"
+        ),
+        "location": {"city": "Acacia Ridge", "state": "QLD", "country": "Australia"},
+        "min_amount": None,
+        "max_amount": None,
+        "interval": None,
+        "job_url": "https://au.indeed.com/viewjob?jk=test",
+        "date_posted": None,
+    }
+
+    result = scraper.format_jobpost(job_post)
+
+    assert result is not None
+    assert result.job_title == "Software Developer"
+    assert result.company == "W.D.T. Engineers Pty Ltd"
+    assert result.salary is not None
+    assert result.salary["annual_min"] == 76000.0
+    assert result.salary["annual_max"] == 85000.0
+
+
+def test_format_jobpost_without_salary():
+    """Test job posting without any salary information."""
+    scraper = IndeedScraper(search_term="test")
+
+    job_post = {
+        "title": "Volunteer Coordinator",
+        "company": "Charity Org",
+        "description": "This is a volunteer position with no salary.",
+        "location": {"city": "Melbourne", "state": "VIC", "country": "Australia"},
+        "min_amount": None,
+        "max_amount": None,
+        "interval": None,
+        "job_url": "https://au.indeed.com/viewjob?jk=test",
+        "date_posted": None,
+    }
+
+    result = scraper.format_jobpost(job_post)
+
+    assert result is not None
+    assert result.job_title == "Volunteer Coordinator"
+    assert result.salary is None
