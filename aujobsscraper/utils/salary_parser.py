@@ -105,6 +105,10 @@ class SalaryParser:
         if not match:
             return None
 
+        # Reject if immediately preceded by minus sign (negative value indicator)
+        if match.start() > 0 and text[match.start() - 1] == '-':
+            return None
+
         val_str = match.group(1).replace(',', '')
 
         try:
