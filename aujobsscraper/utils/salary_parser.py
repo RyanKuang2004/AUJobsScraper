@@ -1,8 +1,15 @@
 from typing import Optional, Dict
+import re
 
 
 class SalaryParser:
     """Extract salary information from job description text."""
+
+    # Currency range pattern: $X - $Y or X - Y
+    RANGE_PATTERN = re.compile(
+        r'\$?\s*([\d,]+)\s*[-–to]+\s*\$?([\d,]+)',
+        re.IGNORECASE
+    )
 
     @staticmethod
     def extract_salary(description: str) -> Optional[Dict[str, float]]:
@@ -16,4 +23,84 @@ class SalaryParser:
         """
         if not description or not isinstance(description, str):
             return None
+
+        # Try range pattern first
+        range_match = SalaryParser._extract_range(description)
+        if range_match:
+            min_val, max_val, interval = range_match
+            annual_min = SalaryParser._to_annual(min_val, interval)
+            annual_max = SalaryParser._to_annual(max_val, interval)
+            return {
+                "annual_min": min(annual_min, annual_max),
+                "annual_max": max(annual_min, annual_max),
+            }
+
         return None
+
+    @staticmethod
+    def _extract_range(text: str) -> Optional[tuple[float, float, str]]:
+        """Extract salary range and interval from text.
+
+        Returns:
+            Tuple of (min, max, interval) or None
+        """
+        match = SalaryParser.RANGE_PATTERN.search(text)
+        if not match:
+            return None
+
+        min_str = match.group(1).replace(',', '')
+        max_str = match.group(2).replace(',', '')
+
+        try:
+            min_val = float(min_str)
+            max_val = float(max_str)
+        except ValueError:
+            return None
+
+        # Look for interval in surrounding text (50 chars before/after)
+        start = max(0, match.start() - 50)
+        end = min(len(text), match.end() + 50)
+        context = text[start:end].lower()
+
+        interval = SalaryParser._detect_interval(context)
+        return (min_val, max_val, interval)
+
+    @staticmethod
+    def _detect_interval(text: str) -> str:
+        """Detect salary interval from text.
+
+        Returns:
+            'hourly', 'daily', 'weekly', 'monthly', or 'yearly'
+        """
+        text = text.lower()
+        if 'hour' in text or '/hr' in text or 'hrly' in text:
+            return 'hourly'
+        if 'day' in text:
+            return 'daily'
+        if 'week' in text or 'wk' in text:
+            return 'weekly'
+        if 'month' in text or 'mo' in text or 'mth' in text:
+            return 'monthly'
+        if 'year' in text or '/yr' in text or 'annual' in text or 'annum' in text:
+            return 'yearly'
+        return 'yearly'  # Default
+
+    @staticmethod
+    def _to_annual(amount: float, interval: str) -> float:
+        """Convert amount to annual salary.
+
+        Args:
+            amount: Salary amount
+            interval: 'hourly', 'daily', 'weekly', 'monthly', or 'yearly'
+
+        Returns:
+            Annualized amount
+        """
+        multipliers = {
+            'hourly': 2080,
+            'daily': 260,
+            'weekly': 52,
+            'monthly': 12,
+            'yearly': 1,
+        }
+        return amount * multipliers.get(interval, 1)

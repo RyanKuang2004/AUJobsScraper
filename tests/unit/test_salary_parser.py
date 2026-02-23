@@ -18,3 +18,35 @@ def test_extract_salary_returns_none_for_empty_string():
 def test_extract_salary_returns_none_for_no_salary():
     result = SalaryParser.extract_salary("No salary information here")
     assert result is None
+
+
+def test_extract_salary_range_with_dollars():
+    description = "$76,000 - $85,000 per year"
+    result = SalaryParser.extract_salary(description)
+    assert result is not None
+    assert result["annual_min"] == 76000.0
+    assert result["annual_max"] == 85000.0
+
+
+def test_extract_salary_range_without_dollars():
+    description = "76,000 - 85,000 per year"
+    result = SalaryParser.extract_salary(description)
+    assert result is not None
+    assert result["annual_min"] == 76000.0
+    assert result["annual_max"] == 85000.0
+
+
+def test_extract_salary_range_with_en_dash():
+    description = "$76,000 – $85,000 per year"
+    result = SalaryParser.extract_salary(description)
+    assert result is not None
+    assert result["annual_min"] == 76000.0
+    assert result["annual_max"] == 85000.0
+
+
+def test_extract_salary_range_with_to():
+    description = "$76,000 to $85,000 per year"
+    result = SalaryParser.extract_salary(description)
+    assert result is not None
+    assert result["annual_min"] == 76000.0
+    assert result["annual_max"] == 85000.0
