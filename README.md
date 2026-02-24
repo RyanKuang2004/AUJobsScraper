@@ -5,7 +5,7 @@ Jobly is a Python package of Playwright-based scrapers for Australian job boards
 **Overview**
 - Purpose: Automated collection of Australian job listings from major boards.
 - Scope: Scrapes public job listing pages and returns structured `JobPosting` objects.
-- Sources: Seek, GradConnection, Prosple.
+- Sources: Seek, GradConnection, Prosple, Indeed.
 
 **Requirements**
 - Python 3.12+
@@ -23,12 +23,19 @@ playwright install
 ```
 
 **Usage**
-Run a scraper module directly:
+
+Run all scrapers:
+```bash
+python scripts/run_all_scrapers.py
+python scripts/run_all_scrapers.py -o results/jobs.json
+```
+
+Run individual scrapers:
 ```bash
 python -m aujobsscraper.scrapers.seek_scraper
 python -m aujobsscraper.scrapers.gradconnection_scraper
 python -m aujobsscraper.scrapers.prosple_scraper
-python -m aujobsscraper.scrapers.indeedscraper
+python -m aujobsscraper.scrapers.indeed_scraper
 ```
 
 **Configuration**
@@ -39,6 +46,12 @@ SCRAPER_MAX_PAGES=5
 SCRAPER_DAYS_FROM_POSTED=3
 SCRAPER_INITIAL_RUN=true
 ```
+
+**Salary Extraction**
+
+The Indeed scraper uses a two-tier salary extraction strategy:
+1. **JobSpy fields** (`min_amount`/`max_amount`): Used when present; normalized to annual via interval multiplier.
+2. **Description fallback** (`SalaryParser`): When JobSpy fields are absent, salary is parsed from the job description text using regex patterns for ranges (`$76,000 - $85,000`) and single values (`$80,000 per year`). Escaped HTML characters (`\$`, `\-`) are cleaned before parsing. Salaries outside $10–$1,000,000/year are rejected.
 
 **Notes**
 - The scrapers rely on the public HTML structure of each job board, which can change without notice.
