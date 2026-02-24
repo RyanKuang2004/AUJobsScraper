@@ -19,14 +19,14 @@ class JobPosting(BaseModel):
     fingerprint: Optional[str] = Field(None, description="Unique fingerprint for deduplication")
 
     # Location and sources
-    locations: List[Location] = Field(default_factory=list)
-    source_urls: List[str] = Field(default_factory=list)
-    platforms: List[str] = Field(default_factory=list)
+    locations: List[Location] = Field(default_factory=list, description="Job locations")
+    source_urls: List[str] = Field(default_factory=list, description="Source URLs for this job")
+    platforms: List[str] = Field(default_factory=list, description="Platforms where job was found")
 
     # Optional scraping fields
-    salary: Optional[Dict[str, float]] = Field(None)
-    posted_at: Optional[str] = Field(None)
-    closing_date: Optional[str] = Field(None)
+    salary: Optional[Dict[str, float]] = Field(None, description="Structured salary info {annual_min, annual_max}")
+    posted_at: Optional[str] = Field(None, description="Date posted (ISO format)")
+    closing_date: Optional[str] = Field(None, description="Application closing date (ISO format)")
 
     class Config:
         frozen = False
