@@ -3,12 +3,13 @@
 
 List values must be provided as JSON arrays, for example:
 SCRAPER_SEARCH_KEYWORDS=["software engineer","data engineer"]
+
+Consumers of this library are responsible for loading their own .env file
+before importing, e.g. by calling dotenv.load_dotenv() in their application.
 """
 
-from pathlib import Path
 from typing import List
 
-from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -54,5 +55,4 @@ class ScraperSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SCRAPER_")
 
 
-load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env", override=False)
 settings = ScraperSettings()
