@@ -25,7 +25,7 @@ class ProspleScraper(BaseScraper):
         skip_urls = skip_urls or set()
 
         items_per_page = settings.prosple_items_per_page
-        max_pages = settings.max_pages
+        max_pages = settings.max_pages if settings.initial_run else settings.prosple_regular_max_pages
         start = 0
         page_count = 0
 
@@ -217,12 +217,22 @@ class ProspleScraper(BaseScraper):
                         min_value = value.get('minValue')
                         max_value = value.get('maxValue')
                         if min_value is not None or max_value is not None:
-                            low = float(min_value if min_value is not None else max_value)
-                            high = float(max_value if max_value is not None else min_value)
-                            return {
-                                "annual_min": low,
-                                "annual_max": high,
-                            }
+                            def _safe_float(v) -> Optional[float]:
+                                if v is None:
+                                    return None
+                                try:
+                                    return float(str(v).replace(",", "").strip())
+                                except (ValueError, TypeError):
+                                    return None
+
+                            low = _safe_float(min_value)
+                            high = _safe_float(max_value)
+                            if low is not None and high is not None:
+                                return {"annual_min": min(low, high), "annual_max": max(low, high)}
+                            if low is not None:
+                                return {"annual_min": low, "annual_max": low}
+                            if high is not None:
+                                return {"annual_min": high, "annual_max": high}
                     if isinstance(value, (int, float)):
                         amount = float(value)
                         return {"annual_min": amount, "annual_max": amount}

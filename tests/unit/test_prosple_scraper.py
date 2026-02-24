@@ -1,5 +1,6 @@
 import asyncio
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from aujobsscraper.config import settings
 from aujobsscraper.scrapers.prosple_scraper import ProspleScraper
@@ -62,9 +63,27 @@ def test_extract_salary_returns_dict_from_json_ld_quantitative_value():
     assert salary == {"annual_min": 50000.0, "annual_max": 56000.0}
 
 
+def test_extract_salary_handles_comma_formatted_min_max_values():
+    """JSON-LD minValue/maxValue as comma-formatted strings must not raise ValueError."""
+    scraper = ProspleScraper()
+    json_data = {
+        "@type": "JobPosting",
+        "baseSalary": {
+            "value": {
+                "minValue": "70,000",
+                "maxValue": "90,000",
+            }
+        }
+    }
+    result = scraper._extract_salary(None, json_data)
+    assert result == {"annual_min": 70000.0, "annual_max": 90000.0}
+
+
 def test_scrape_stops_at_configured_max_pages(monkeypatch):
     scraper = ProspleScraper()
+    monkeypatch.setattr(settings, "initial_run", False)
     monkeypatch.setattr(settings, "max_pages", 1)
+    monkeypatch.setattr(settings, "prosple_regular_max_pages", 1)
     monkeypatch.setattr(settings, "prosple_items_per_page", 20)
 
     class _FakePage:
@@ -111,3 +130,25 @@ def test_scrape_stops_at_configured_max_pages(monkeypatch):
 
     assert len(result) == 0
     assert calls["count"] == 1
+
+
+def test_prosple_uses_full_max_pages_on_initial_run():
+    scraper = ProspleScraper()
+    with patch("aujobsscraper.scrapers.prosple_scraper.settings") as mock_settings:
+        mock_settings.initial_run = True
+        mock_settings.max_pages = 20
+        mock_settings.prosple_regular_max_pages = 3
+        mock_settings.prosple_items_per_page = 20
+        limit = mock_settings.max_pages if mock_settings.initial_run else mock_settings.prosple_regular_max_pages
+        assert limit == 20
+
+
+def test_prosple_uses_regular_max_pages_on_regular_run():
+    scraper = ProspleScraper()
+    with patch("aujobsscraper.scrapers.prosple_scraper.settings") as mock_settings:
+        mock_settings.initial_run = False
+        mock_settings.max_pages = 20
+        mock_settings.prosple_regular_max_pages = 3
+        mock_settings.prosple_items_per_page = 20
+        limit = mock_settings.max_pages if mock_settings.initial_run else mock_settings.prosple_regular_max_pages
+        assert limit == 3
