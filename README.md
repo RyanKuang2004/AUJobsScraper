@@ -41,10 +41,22 @@ python -m aujobsscraper.scrapers.indeed_scraper
 **Configuration**
 Configuration is managed via environment variables prefixed with `SCRAPER_`. Below are common examples:
 ```bash
-SCRAPER_SEARCH_KEYWORDS="['software engineer','data scientist']"
-SCRAPER_MAX_PAGES=5
+SCRAPER_SEARCH_KEYWORDS='["software engineer","data scientist"]'
+SCRAPER_GRADCONNECTION_KEYWORDS='["software engineer","data science"]'
+SCRAPER_MAX_PAGES=3
 SCRAPER_DAYS_FROM_POSTED=3
+SCRAPER_INITIAL_DAYS_FROM_POSTED=31
 SCRAPER_INITIAL_RUN=true
+SCRAPER_CONCURRENCY=5
+
+SCRAPER_INDEED_HOURS_OLD=24
+SCRAPER_INDEED_RESULTS_WANTED=30
+SCRAPER_INDEED_RESULTS_WANTED_TOTAL=120
+SCRAPER_INDEED_TERM_CONCURRENCY=2
+SCRAPER_INDEED_LOCATION=
+SCRAPER_INDEED_COUNTRY=Australia
+
+SCRAPER_PROSPLE_ITEMS_PER_PAGE=20
 ```
 
 **Salary Extraction**
@@ -56,5 +68,4 @@ The Indeed scraper uses a two-tier salary extraction strategy:
 **Notes**
 - The scrapers rely on the public HTML structure of each job board, which can change without notice.
 - Network conditions and site rate-limiting may affect scrape reliability.
-
 

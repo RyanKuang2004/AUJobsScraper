@@ -18,23 +18,36 @@ class IndeedScraper(BaseScraper):
         search_term: Optional[str] = None,
         search_terms: Optional[List[str]] = None,
         google_search_term: Optional[str] = None,
-        location: str = "",
-        results_wanted: int = 20,
+        location: Optional[str] = None,
+        results_wanted: Optional[int] = None,
         results_wanted_total: Optional[int] = None,
-        hours_old: int = 72,
-        country_indeed: str = "Australia",
-        term_concurrency: int = 2,
+        hours_old: Optional[int] = None,
+        country_indeed: Optional[str] = None,
+        term_concurrency: Optional[int] = None,
     ):
         super().__init__("indeed")
         self.search_term = (search_term or "").strip()
         self.search_terms = self._resolve_search_terms(search_terms, self.search_term)
         self.google_search_term = google_search_term
-        self.location = location
-        self.results_wanted = results_wanted
-        self.results_wanted_total = results_wanted_total
-        self.hours_old = hours_old
-        self.country_indeed = country_indeed
-        self.term_concurrency = max(1, term_concurrency)
+        self.location = settings.indeed_location if location is None else location
+        self.results_wanted = (
+            settings.indeed_results_wanted if results_wanted is None else results_wanted
+        )
+        self.results_wanted_total = (
+            settings.indeed_results_wanted_total
+            if results_wanted_total is None
+            else results_wanted_total
+        )
+        self.hours_old = settings.indeed_hours_old if hours_old is None else hours_old
+        self.country_indeed = (
+            settings.indeed_country if country_indeed is None else country_indeed
+        )
+        resolved_term_concurrency = (
+            settings.indeed_term_concurrency
+            if term_concurrency is None
+            else term_concurrency
+        )
+        self.term_concurrency = max(1, resolved_term_concurrency)
 
     async def scrape(self, skip_urls: Optional[Set[str]] = None) -> List[JobPosting]:
         self._results = []

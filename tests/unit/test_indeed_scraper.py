@@ -1,5 +1,6 @@
 import asyncio
 
+from aujobsscraper.config import settings
 from aujobsscraper.scrapers.indeed_scraper import IndeedScraper
 
 
@@ -160,3 +161,46 @@ def test_scrape_continues_when_one_search_term_fails():
 
     assert len(result) == 1
     assert result[0].job_title == "Data Engineer"
+
+
+def test_indeed_uses_settings_defaults_when_args_not_provided(monkeypatch):
+    monkeypatch.setattr(settings, "indeed_hours_old", 24)
+    monkeypatch.setattr(settings, "indeed_results_wanted", 30)
+    monkeypatch.setattr(settings, "indeed_results_wanted_total", 120)
+    monkeypatch.setattr(settings, "indeed_term_concurrency", 4)
+    monkeypatch.setattr(settings, "indeed_location", "Sydney")
+    monkeypatch.setattr(settings, "indeed_country", "Australia")
+
+    scraper = IndeedScraper()
+
+    assert scraper.hours_old == 24
+    assert scraper.results_wanted == 30
+    assert scraper.results_wanted_total == 120
+    assert scraper.term_concurrency == 4
+    assert scraper.location == "Sydney"
+    assert scraper.country_indeed == "Australia"
+
+
+def test_indeed_constructor_args_override_settings(monkeypatch):
+    monkeypatch.setattr(settings, "indeed_hours_old", 24)
+    monkeypatch.setattr(settings, "indeed_results_wanted", 30)
+    monkeypatch.setattr(settings, "indeed_results_wanted_total", 120)
+    monkeypatch.setattr(settings, "indeed_term_concurrency", 4)
+    monkeypatch.setattr(settings, "indeed_location", "Sydney")
+    monkeypatch.setattr(settings, "indeed_country", "Australia")
+
+    scraper = IndeedScraper(
+        hours_old=6,
+        results_wanted=9,
+        results_wanted_total=10,
+        term_concurrency=1,
+        location="Melbourne",
+        country_indeed="New Zealand",
+    )
+
+    assert scraper.hours_old == 6
+    assert scraper.results_wanted == 9
+    assert scraper.results_wanted_total == 10
+    assert scraper.term_concurrency == 1
+    assert scraper.location == "Melbourne"
+    assert scraper.country_indeed == "New Zealand"

@@ -32,10 +32,7 @@ async def run_scraper(scraper_name: str, skip_urls: Optional[set] = None) -> dic
     elif scraper_name == "prosple":
         scraper = ProspleScraper()
     elif scraper_name == "indeed":
-        scraper = IndeedScraper(
-            results_wanted=20,
-            results_wanted_total=100,
-        )
+        scraper = IndeedScraper()
     else:
         raise ValueError(f"Unknown scraper: {scraper_name}")
 

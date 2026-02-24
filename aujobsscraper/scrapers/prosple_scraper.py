@@ -24,8 +24,10 @@ class ProspleScraper(BaseScraper):
         self._results = []
         skip_urls = skip_urls or set()
 
-        items_per_page = 20
+        items_per_page = settings.prosple_items_per_page
+        max_pages = settings.max_pages
         start = 0
+        page_count = 0
 
         try:
             async with async_playwright() as p:
@@ -36,7 +38,7 @@ class ProspleScraper(BaseScraper):
                     )
                     page = await context.new_page()
 
-                    while True:
+                    while page_count < max_pages:
                         url = f"{self.search_url_base}&start={start}"
                         self.logger.info(f"Visiting List Page: {url}")
 
@@ -57,6 +59,7 @@ class ProspleScraper(BaseScraper):
                             new_links = [d['url'] for d in new_jobs_data]
                             await self.process_jobs_concurrently(context, new_links)
 
+                            page_count += 1
                             start += items_per_page
 
                         except Exception as e:
