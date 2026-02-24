@@ -45,3 +45,4 @@ playwright/.auth/
 .antigravityignore
 
 data/
+**/results/

@@ -56,7 +56,7 @@ async def run_all_scrapers(output_path: Optional[str] = None) -> None:
     # Track all seen URLs to avoid duplicates across scrapers
     seen_urls = set()
 
-    scrapers = ["indeed"]
+    scrapers = ["indeed", "seek", "gradconnection", "prosple"]
     all_results = []
 
     for scraper_name in scrapers:
