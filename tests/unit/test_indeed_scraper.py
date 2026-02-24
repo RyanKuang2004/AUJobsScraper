@@ -1,4 +1,5 @@
 import asyncio
+from unittest.mock import patch
 
 from aujobsscraper.config import settings
 from aujobsscraper.scrapers.indeed_scraper import IndeedScraper
@@ -204,3 +205,54 @@ def test_indeed_constructor_args_override_settings(monkeypatch):
     assert scraper.term_concurrency == 1
     assert scraper.location == "Melbourne"
     assert scraper.country_indeed == "New Zealand"
+
+
+def test_indeed_uses_initial_hours_old_on_initial_run():
+    """On initial run, hours_old should be indeed_initial_hours_old (2000)."""
+    with patch("aujobsscraper.scrapers.indeed_scraper.settings") as mock_settings:
+        mock_settings.initial_run = True
+        mock_settings.indeed_hours_old = 72
+        mock_settings.indeed_initial_hours_old = 2000
+        mock_settings.indeed_location = ""
+        mock_settings.indeed_results_wanted = 20
+        mock_settings.indeed_results_wanted_total = 100
+        mock_settings.indeed_term_concurrency = 2
+        mock_settings.indeed_country = "Australia"
+        mock_settings.search_keywords = ["software engineer"]
+
+        scraper = IndeedScraper()
+        assert scraper.hours_old == 2000
+
+
+def test_indeed_uses_regular_hours_old_on_regular_run():
+    """On regular run, hours_old should be indeed_hours_old (72)."""
+    with patch("aujobsscraper.scrapers.indeed_scraper.settings") as mock_settings:
+        mock_settings.initial_run = False
+        mock_settings.indeed_hours_old = 72
+        mock_settings.indeed_initial_hours_old = 2000
+        mock_settings.indeed_location = ""
+        mock_settings.indeed_results_wanted = 20
+        mock_settings.indeed_results_wanted_total = 100
+        mock_settings.indeed_term_concurrency = 2
+        mock_settings.indeed_country = "Australia"
+        mock_settings.search_keywords = ["software engineer"]
+
+        scraper = IndeedScraper()
+        assert scraper.hours_old == 72
+
+
+def test_indeed_explicit_hours_old_overrides_initial_run():
+    """Explicit hours_old param always wins over initial_run logic."""
+    with patch("aujobsscraper.scrapers.indeed_scraper.settings") as mock_settings:
+        mock_settings.initial_run = True
+        mock_settings.indeed_hours_old = 72
+        mock_settings.indeed_initial_hours_old = 2000
+        mock_settings.indeed_location = ""
+        mock_settings.indeed_results_wanted = 20
+        mock_settings.indeed_results_wanted_total = 100
+        mock_settings.indeed_term_concurrency = 2
+        mock_settings.indeed_country = "Australia"
+        mock_settings.search_keywords = ["software engineer"]
+
+        scraper = IndeedScraper(hours_old=48)
+        assert scraper.hours_old == 48

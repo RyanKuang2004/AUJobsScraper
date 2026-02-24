@@ -38,7 +38,12 @@ class IndeedScraper(BaseScraper):
             if results_wanted_total is None
             else results_wanted_total
         )
-        self.hours_old = settings.indeed_hours_old if hours_old is None else hours_old
+        if hours_old is not None:
+            self.hours_old = hours_old
+        elif settings.initial_run:
+            self.hours_old = settings.indeed_initial_hours_old
+        else:
+            self.hours_old = settings.indeed_hours_old
         self.country_indeed = (
             settings.indeed_country if country_indeed is None else country_indeed
         )
