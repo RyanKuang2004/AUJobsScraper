@@ -17,7 +17,7 @@ _EXPORT_TO_MODULE = {
     "SeekScraper": "aujobsscraper.scrapers.seek_scraper",
     "GradConnectionScraper": "aujobsscraper.scrapers.gradconnection_scraper",
     "ProspleScraper": "aujobsscraper.scrapers.prosple_scraper",
-    "IndeedScraper": "aujobsscraper.scrapers.indeedscraper",
+    "IndeedScraper": "aujobsscraper.scrapers.indeed_scraper",
 }
 
 

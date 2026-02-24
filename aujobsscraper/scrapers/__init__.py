@@ -7,7 +7,7 @@ _CLASS_TO_MODULE = {
     "SeekScraper": "seek_scraper",
     "GradConnectionScraper": "gradconnection_scraper",
     "ProspleScraper": "prosple_scraper",
-    "IndeedScraper": "indeedscraper",
+    "IndeedScraper": "indeed_scraper",
 }
 
 
