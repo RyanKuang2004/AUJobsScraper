@@ -41,6 +41,7 @@ class ScraperSettings(BaseSettings):
     concurrency: int = Field(default=5)
 
     indeed_hours_old: int = Field(default=72)
+    indeed_initial_hours_old: int = Field(default=2000)
     indeed_results_wanted: int = Field(default=20)
     indeed_results_wanted_total: int | None = Field(default=100)
     indeed_term_concurrency: int = Field(default=2)
@@ -48,6 +49,7 @@ class ScraperSettings(BaseSettings):
     indeed_country: str = Field(default="Australia")
 
     prosple_items_per_page: int = Field(default=20)
+    prosple_regular_max_pages: int = Field(default=3)
 
     model_config = SettingsConfigDict(env_prefix="SCRAPER_")
 
