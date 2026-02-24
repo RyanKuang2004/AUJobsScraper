@@ -91,3 +91,39 @@ def test_process_job_normalizes_gradconnection_salary_dict():
 
     assert len(scraper._results) == 1
     assert scraper._results[0].salary == {"annual_min": 60000.0, "annual_max": 80000.0}
+
+
+def test_extract_salary_handles_comma_formatted_strings():
+    """Salary dict with comma-formatted string values must not crash."""
+    scraper = GradConnectionScraper()
+    json_data = {
+        "campaignstore": {
+            "campaign": {
+                "salary": {
+                    "min_salary": "60,000",
+                    "max_salary": "80,000",
+                    "details": "",
+                }
+            }
+        }
+    }
+    result = scraper._extract_salary(None, json_data)
+    assert result == {"annual_min": 60000.0, "annual_max": 80000.0}
+
+
+def test_extract_salary_returns_none_for_unparseable_salary():
+    """Returns None when salary values cannot be parsed."""
+    scraper = GradConnectionScraper()
+    json_data = {
+        "campaignstore": {
+            "campaign": {
+                "salary": {
+                    "min_salary": None,
+                    "max_salary": None,
+                    "details": "",
+                }
+            }
+        }
+    }
+    result = scraper._extract_salary(None, json_data)
+    assert result is None

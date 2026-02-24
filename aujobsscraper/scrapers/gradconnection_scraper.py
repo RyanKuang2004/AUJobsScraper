@@ -224,10 +224,22 @@ class GradConnectionScraper(BaseScraper):
                     max_salary = salary.get("max_salary")
 
                     if min_salary is not None or max_salary is not None:
-                        salary_text = f"{min_salary or ''} - {max_salary or ''}".strip(" -")
-                        normalized = normalize_salary(salary_text)
-                        if normalized:
-                            return normalized
+                        def _safe_float(v) -> Optional[float]:
+                            if v is None:
+                                return None
+                            try:
+                                return float(str(v).replace(",", "").strip())
+                            except (ValueError, TypeError):
+                                return None
+
+                        low = _safe_float(min_salary)
+                        high = _safe_float(max_salary)
+                        if low is not None and high is not None:
+                            return {"annual_min": min(low, high), "annual_max": max(low, high)}
+                        if low is not None:
+                            return {"annual_min": low, "annual_max": low}
+                        if high is not None:
+                            return {"annual_min": high, "annual_max": high}
 
                     details = salary.get("details")
                     if isinstance(details, str) and details.strip():
@@ -239,6 +251,8 @@ class GradConnectionScraper(BaseScraper):
                     normalized = normalize_salary(salary)
                     if normalized:
                         return normalized
+        if soup is None:
+            return None
         overview = soup.select_one("div.job-overview-container")
         if overview:
             dt = overview.find("dt", string=lambda text: text and "Salary" in text)
