@@ -85,6 +85,7 @@ def test_scrape_stops_at_configured_max_pages(monkeypatch):
     monkeypatch.setattr(settings, "max_pages", 1)
     monkeypatch.setattr(settings, "prosple_regular_max_pages", 1)
     monkeypatch.setattr(settings, "prosple_items_per_page", 20)
+    monkeypatch.setattr(settings, "search_keywords", ["software engineer"])
 
     class _FakePage:
         async def goto(self, url, wait_until="domcontentloaded"):
@@ -130,6 +131,65 @@ def test_scrape_stops_at_configured_max_pages(monkeypatch):
 
     assert len(result) == 0
     assert calls["count"] == 1
+
+
+def test_scrape_iterates_keywords_and_uses_plus_encoded_tag(monkeypatch):
+    scraper = ProspleScraper()
+    monkeypatch.setattr(settings, "initial_run", False)
+    monkeypatch.setattr(settings, "max_pages", 1)
+    monkeypatch.setattr(settings, "prosple_regular_max_pages", 1)
+    monkeypatch.setattr(settings, "prosple_items_per_page", 20)
+    monkeypatch.setattr(settings, "search_keywords", ["software engineer", "data scientist"])
+
+    class _FakePage:
+        async def goto(self, url, wait_until="domcontentloaded"):
+            return None
+
+    class _FakeContext:
+        async def new_page(self):
+            return _FakePage()
+
+    class _FakeBrowser:
+        async def new_context(self, user_agent=None):
+            return _FakeContext()
+
+        async def close(self):
+            return None
+
+    class _FakePlaywrightManager:
+        async def __aenter__(self):
+            return SimpleNamespace(chromium=SimpleNamespace(launch=self._launch))
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def _launch(self, headless=True):
+            return _FakeBrowser()
+
+    seen_urls = []
+
+    async def _fake_get_job_links(page, url):
+        seen_urls.append(url)
+        if "software+engineer" in url:
+            return [{"url": "https://au.prosple.com/job-software"}]
+        if "data+scientist" in url:
+            return [{"url": "https://au.prosple.com/job-data"}]
+        return []
+
+    async def _fake_process_jobs(context, job_urls):
+        return None
+
+    monkeypatch.setattr("aujobsscraper.scrapers.prosple_scraper.async_playwright", lambda: _FakePlaywrightManager())
+    monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
+    monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
+
+    result = asyncio.run(scraper.scrape())
+
+    assert len(result) == 0
+    assert seen_urls == [
+        f"{scraper.search_url_base}&keywords=software+engineer&start=0",
+        f"{scraper.search_url_base}&keywords=data+scientist&start=0",
+    ]
 
 
 def test_prosple_uses_full_max_pages_on_initial_run():

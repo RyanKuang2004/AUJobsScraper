@@ -176,7 +176,6 @@ class GradConnectionScraper(BaseScraper):
         try:
             json_data = await page.evaluate("() => window.__initialState__")
             if json_data:
-                self.logger.info("Successfully extracted window.__initialState__")
                 return json_data
         except Exception as e:
             self.logger.warning(f"Failed to extract JSON data: {e}")

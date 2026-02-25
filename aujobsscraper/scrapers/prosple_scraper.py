@@ -17,17 +17,17 @@ class ProspleScraper(BaseScraper):
     def __init__(self):
         super().__init__("prosple")
         self.base_url = "https://au.prosple.com"
-        self.search_url_base = "https://au.prosple.com/search-jobs?locations=9692&defaults_applied=1&study_fields=506"
+        self.search_url_base = "https://au.prosple.com/search-jobs?locations=9692&defaults_applied=1"
 
     async def scrape(self, skip_urls=None) -> list:
         self.logger.info("Starting Prosple Scraper...")
         self._results = []
         skip_urls = skip_urls or set()
+        seen_urls = set(skip_urls)
 
         items_per_page = settings.prosple_items_per_page
         max_pages = settings.max_pages if settings.initial_run else settings.prosple_regular_max_pages
-        start = 0
-        page_count = 0
+        keywords = settings.search_keywords or []
 
         try:
             async with async_playwright() as p:
@@ -38,33 +38,46 @@ class ProspleScraper(BaseScraper):
                     )
                     page = await context.new_page()
 
-                    while page_count < max_pages:
-                        url = f"{self.search_url_base}&start={start}"
-                        self.logger.info(f"Visiting List Page: {url}")
+                    for raw_keyword in keywords:
+                        encoded_keyword = "+".join(raw_keyword.split())
+                        if not encoded_keyword:
+                            continue
 
-                        try:
-                            job_links_data = await self._get_job_links(page, url)
-                            if not job_links_data:
-                                self.logger.info("No more results found.")
+                        start = 0
+                        page_count = 0
+
+                        while page_count < max_pages:
+                            url = f"{self.search_url_base}&keywords={encoded_keyword}&start={start}"
+                            self.logger.info(f"Visiting List Page: {url}")
+
+                            try:
+                                job_links_data = await self._get_job_links(page, url)
+                                if not job_links_data:
+                                    self.logger.info(f"No more results found for keyword '{raw_keyword}'.")
+                                    break
+
+                                new_jobs_data = [d for d in job_links_data if d['url'] not in seen_urls]
+
+                                skipped_count = len(job_links_data) - len(new_jobs_data)
+                                if skipped_count > 0:
+                                    self.logger.info(f"Skipping {skipped_count} existing jobs.")
+
+                                self.logger.info(
+                                    f"Found {len(new_jobs_data)} NEW jobs for keyword '{raw_keyword}' on page start={start}"
+                                )
+
+                                new_links = [d['url'] for d in new_jobs_data]
+                                seen_urls.update(new_links)
+                                await self.process_jobs_concurrently(context, new_links)
+
+                                page_count += 1
+                                start += items_per_page
+
+                            except Exception as e:
+                                self.logger.error(
+                                    f"Error processing keyword '{raw_keyword}' page start={start}: {e}"
+                                )
                                 break
-
-                            new_jobs_data = [d for d in job_links_data if d['url'] not in skip_urls]
-
-                            skipped_count = len(job_links_data) - len(new_jobs_data)
-                            if skipped_count > 0:
-                                self.logger.info(f"Skipping {skipped_count} existing jobs.")
-
-                            self.logger.info(f"Found {len(new_jobs_data)} NEW jobs on page start={start}")
-
-                            new_links = [d['url'] for d in new_jobs_data]
-                            await self.process_jobs_concurrently(context, new_links)
-
-                            page_count += 1
-                            start += items_per_page
-
-                        except Exception as e:
-                            self.logger.error(f"Error processing page start={start}: {e}")
-                            break
                 finally:
                     await browser.close()
 
