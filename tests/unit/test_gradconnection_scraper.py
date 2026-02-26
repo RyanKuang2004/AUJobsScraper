@@ -1,5 +1,7 @@
 import asyncio
+from types import SimpleNamespace
 
+from aujobsscraper.config import settings
 from aujobsscraper.scrapers.gradconnection_scraper import GradConnectionScraper
 
 
@@ -21,6 +23,151 @@ class FakePage:
 
     async def evaluate(self, _):
         return self._json_data
+
+
+def _make_gc_playwright_manager():
+    class _FakePage:
+        async def goto(self, url, wait_until="domcontentloaded"):
+            return None
+
+    class _FakeContext:
+        async def new_page(self):
+            return _FakePage()
+
+    class _FakeBrowser:
+        async def new_context(self, **kwargs):
+            return _FakeContext()
+
+        async def close(self):
+            return None
+
+    class _FakePlaywrightManager:
+        async def __aenter__(self):
+            return SimpleNamespace(chromium=SimpleNamespace(launch=self._launch))
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def _launch(self, headless=True):
+            return _FakeBrowser()
+
+    return _FakePlaywrightManager()
+
+
+def test_gradconnection_regular_run_url_includes_ordering_param(monkeypatch):
+    """On a regular run, listing URLs must include ordering=-recent_job_created."""
+    scraper = GradConnectionScraper()
+    monkeypatch.setattr(settings, "initial_run", False)
+    monkeypatch.setattr(settings, "gradconnection_keywords", ["software engineer"])
+    monkeypatch.setattr(settings, "gradconnection_regular_max_pages", 4)
+
+    seen_urls = []
+
+    async def _fake_get_job_links(page, url):
+        seen_urls.append(url)
+        return []
+
+    async def _fake_process_jobs(context, job_urls):
+        return None
+
+    monkeypatch.setattr(
+        "aujobsscraper.scrapers.gradconnection_scraper.async_playwright",
+        lambda: _make_gc_playwright_manager(),
+    )
+    monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
+    monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
+
+    asyncio.run(scraper.scrape())
+
+    assert len(seen_urls) == 1
+    assert "ordering=-recent_job_created" in seen_urls[0]
+
+
+def test_gradconnection_initial_run_url_excludes_ordering_param(monkeypatch):
+    """On an initial run, listing URLs must NOT include the ordering param."""
+    scraper = GradConnectionScraper()
+    monkeypatch.setattr(settings, "initial_run", True)
+    monkeypatch.setattr(settings, "gradconnection_keywords", ["software engineer"])
+    monkeypatch.setattr(settings, "max_pages", 1)
+
+    seen_urls = []
+
+    async def _fake_get_job_links(page, url):
+        seen_urls.append(url)
+        return []
+
+    async def _fake_process_jobs(context, job_urls):
+        return None
+
+    monkeypatch.setattr(
+        "aujobsscraper.scrapers.gradconnection_scraper.async_playwright",
+        lambda: _make_gc_playwright_manager(),
+    )
+    monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
+    monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
+
+    asyncio.run(scraper.scrape())
+
+    assert len(seen_urls) == 1
+    assert "ordering=" not in seen_urls[0]
+
+
+def test_gradconnection_regular_run_respects_regular_max_pages(monkeypatch):
+    """On a regular run, scraper stops after gradconnection_regular_max_pages pages."""
+    scraper = GradConnectionScraper()
+    monkeypatch.setattr(settings, "initial_run", False)
+    monkeypatch.setattr(settings, "gradconnection_keywords", ["software engineer"])
+    monkeypatch.setattr(settings, "gradconnection_regular_max_pages", 4)
+    monkeypatch.setattr(settings, "max_pages", 20)
+
+    call_count = {"n": 0}
+
+    async def _fake_get_job_links(page, url):
+        call_count["n"] += 1
+        return [f"https://au.gradconnection.com/job-{call_count['n']}-{i}/" for i in range(5)]
+
+    async def _fake_process_jobs(context, job_urls):
+        return None
+
+    monkeypatch.setattr(
+        "aujobsscraper.scrapers.gradconnection_scraper.async_playwright",
+        lambda: _make_gc_playwright_manager(),
+    )
+    monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
+    monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
+
+    asyncio.run(scraper.scrape())
+
+    assert call_count["n"] == 4
+
+
+def test_gradconnection_initial_run_uses_max_pages(monkeypatch):
+    """On an initial run, scraper uses max_pages (not gradconnection_regular_max_pages)."""
+    scraper = GradConnectionScraper()
+    monkeypatch.setattr(settings, "initial_run", True)
+    monkeypatch.setattr(settings, "gradconnection_keywords", ["software engineer"])
+    monkeypatch.setattr(settings, "max_pages", 3)
+    monkeypatch.setattr(settings, "gradconnection_regular_max_pages", 4)
+
+    call_count = {"n": 0}
+
+    async def _fake_get_job_links(page, url):
+        call_count["n"] += 1
+        return [f"https://au.gradconnection.com/job-{call_count['n']}-{i}/" for i in range(5)]
+
+    async def _fake_process_jobs(context, job_urls):
+        return None
+
+    monkeypatch.setattr(
+        "aujobsscraper.scrapers.gradconnection_scraper.async_playwright",
+        lambda: _make_gc_playwright_manager(),
+    )
+    monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
+    monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
+
+    asyncio.run(scraper.scrape())
+
+    assert call_count["n"] == 3
 
 
 def test_process_job_accepts_dict_payload_with_url():

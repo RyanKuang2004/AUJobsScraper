@@ -26,7 +26,7 @@ class GradConnectionScraper(BaseScraper):
         skip_urls = skip_urls or set()
 
         terms = settings.gradconnection_keywords
-        limit = settings.max_pages
+        limit = settings.max_pages if settings.initial_run else settings.gradconnection_regular_max_pages
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
@@ -41,7 +41,10 @@ class GradConnectionScraper(BaseScraper):
                     encoded_term = term.replace(" ", "+")
 
                     for page_num in range(1, limit + 1):
-                        url = f"{self.base_url}/jobs/australia/?title={encoded_term}&page={page_num}"
+                        if settings.initial_run:
+                            url = f"{self.base_url}/jobs/australia/?title={encoded_term}&page={page_num}"
+                        else:
+                            url = f"{self.base_url}/jobs/australia/?title={encoded_term}&ordering=-recent_job_created&page={page_num}"
                         self.logger.info(f"Visiting List Page: {url}")
 
                         try:
