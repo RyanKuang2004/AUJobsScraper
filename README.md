@@ -59,12 +59,6 @@ SCRAPER_INDEED_COUNTRY=Australia
 SCRAPER_PROSPLE_ITEMS_PER_PAGE=20
 ```
 
-**Salary Extraction**
-
-The Indeed scraper uses a two-tier salary extraction strategy:
-1. **JobSpy fields** (`min_amount`/`max_amount`): Used when present; normalized to annual via interval multiplier.
-2. **Description fallback** (`SalaryParser`): When JobSpy fields are absent, salary is parsed from the job description text using regex patterns for ranges (`$76,000 - $85,000`) and single values (`$80,000 per year`). Escaped HTML characters (`\$`, `\-`) are cleaned before parsing. Salaries outside $10–$1,000,000/year are rejected.
-
 **Notes**
 - The scrapers rely on the public HTML structure of each job board, which can change without notice.
 - Network conditions and site rate-limiting may affect scrape reliability.
