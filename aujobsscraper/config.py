@@ -50,7 +50,8 @@ class ScraperSettings(BaseSettings):
     indeed_country: str = Field(default="Australia")
 
     prosple_items_per_page: int = Field(default=20)
-    prosple_regular_max_pages: int = Field(default=3)
+    prosple_regular_max_pages: int = Field(default=4)
+    gradconnection_regular_max_pages: int = Field(default=4)
 
     model_config = SettingsConfigDict(env_prefix="SCRAPER_")
 

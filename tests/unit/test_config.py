@@ -37,3 +37,15 @@ def test_indeed_and_prosple_settings_have_defaults():
     assert settings.indeed_location == ""
     assert settings.indeed_country == "Australia"
     assert settings.prosple_items_per_page == 20
+
+
+def test_prosple_regular_max_pages_default_is_4(monkeypatch):
+    monkeypatch.delenv("SCRAPER_PROSPLE_REGULAR_MAX_PAGES", raising=False)
+    settings = ScraperSettings()
+    assert settings.prosple_regular_max_pages == 4
+
+
+def test_gradconnection_regular_max_pages_default_is_4(monkeypatch):
+    monkeypatch.delenv("SCRAPER_GRADCONNECTION_REGULAR_MAX_PAGES", raising=False)
+    settings = ScraperSettings()
+    assert settings.gradconnection_regular_max_pages == 4
