@@ -45,9 +45,10 @@ class ProspleScraper(BaseScraper):
 
                         start = 0
                         page_count = 0
+                        sort_suffix = "&sort=newest_opportunities%7Cdesc" if not settings.initial_run else ""
 
                         while page_count < max_pages:
-                            url = f"{self.search_url_base}&keywords={encoded_keyword}&start={start}"
+                            url = f"{self.search_url_base}&keywords={encoded_keyword}&start={start}{sort_suffix}"
                             self.logger.info(f"Visiting List Page: {url}")
 
                             try:

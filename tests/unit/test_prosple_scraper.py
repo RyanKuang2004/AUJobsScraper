@@ -17,6 +17,96 @@ class FakePage:
         return self._html
 
 
+def _make_prosple_playwright_manager():
+    class _FakePage:
+        async def goto(self, url, wait_until="domcontentloaded"):
+            return None
+
+    class _FakeContext:
+        async def new_page(self):
+            return _FakePage()
+
+    class _FakeBrowser:
+        async def new_context(self, **kwargs):
+            return _FakeContext()
+
+        async def close(self):
+            return None
+
+    class _FakePlaywrightManager:
+        async def __aenter__(self):
+            return SimpleNamespace(chromium=SimpleNamespace(launch=self._launch))
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def _launch(self, headless=True):
+            return _FakeBrowser()
+
+    return _FakePlaywrightManager()
+
+
+def test_prosple_regular_run_url_includes_sort_newest_desc(monkeypatch):
+    """On a regular run, listing URLs must include sort=newest_opportunities%7Cdesc."""
+    scraper = ProspleScraper()
+    monkeypatch.setattr(settings, "initial_run", False)
+    monkeypatch.setattr(settings, "max_pages", 20)
+    monkeypatch.setattr(settings, "prosple_regular_max_pages", 4)
+    monkeypatch.setattr(settings, "prosple_items_per_page", 20)
+    monkeypatch.setattr(settings, "search_keywords", ["software engineer"])
+
+    seen_urls = []
+
+    async def _fake_get_job_links(page, url):
+        seen_urls.append(url)
+        return []
+
+    async def _fake_process_jobs(context, job_urls):
+        return None
+
+    monkeypatch.setattr(
+        "aujobsscraper.scrapers.prosple_scraper.async_playwright",
+        lambda: _make_prosple_playwright_manager(),
+    )
+    monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
+    monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
+
+    asyncio.run(scraper.scrape())
+
+    assert len(seen_urls) == 1
+    assert "sort=newest_opportunities%7Cdesc" in seen_urls[0]
+
+
+def test_prosple_initial_run_url_excludes_sort_param(monkeypatch):
+    """On an initial run, listing URLs must NOT include the sort param."""
+    scraper = ProspleScraper()
+    monkeypatch.setattr(settings, "initial_run", True)
+    monkeypatch.setattr(settings, "max_pages", 1)
+    monkeypatch.setattr(settings, "prosple_items_per_page", 20)
+    monkeypatch.setattr(settings, "search_keywords", ["software engineer"])
+
+    seen_urls = []
+
+    async def _fake_get_job_links(page, url):
+        seen_urls.append(url)
+        return []
+
+    async def _fake_process_jobs(context, job_urls):
+        return None
+
+    monkeypatch.setattr(
+        "aujobsscraper.scrapers.prosple_scraper.async_playwright",
+        lambda: _make_prosple_playwright_manager(),
+    )
+    monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
+    monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
+
+    asyncio.run(scraper.scrape())
+
+    assert len(seen_urls) == 1
+    assert "sort=" not in seen_urls[0]
+
+
 def test_get_job_links_extracts_target_blank_graduate_employer_links(monkeypatch):
     html = """
     <html>
@@ -187,8 +277,8 @@ def test_scrape_iterates_keywords_and_uses_plus_encoded_tag(monkeypatch):
 
     assert len(result) == 0
     assert seen_urls == [
-        f"{scraper.search_url_base}&keywords=software+engineer&start=0",
-        f"{scraper.search_url_base}&keywords=data+scientist&start=0",
+        f"{scraper.search_url_base}&keywords=software+engineer&start=0&sort=newest_opportunities%7Cdesc",
+        f"{scraper.search_url_base}&keywords=data+scientist&start=0&sort=newest_opportunities%7Cdesc",
     ]
 
 
