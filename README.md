@@ -142,20 +142,11 @@ This repository currently defines a canonical **data model schema** (Pydantic) r
 | `posted_at` | date/string ISO | Yes | Posting date in ISO format |
 | `closing_date` | date/string ISO | Yes | Closing date in ISO format |
 
-<<<<<<< HEAD
 ### `locations` (embedded object)
 | Field | Type | Nullable | Description |
 |---|---|---|---|
 | `city` | string | No | Australian city (or `Australia` for country-level fallback) |
 | `state` | string | Yes | State/territory code (e.g., `NSW`, `VIC`) |
-=======
-SCRAPER_PROSPLE_ITEMS_PER_PAGE=20
-```
-
-**Notes**
-- The scrapers rely on the public HTML structure of each job board, which can change without notice.
-- Network conditions and site rate-limiting may affect scrape reliability.
->>>>>>> 1931d35213514dd70c549e67bbd9dd0af481d14c
 
 ## Notes
 - Scrapers depend on third-party site structure and may require updates when markup changes.
