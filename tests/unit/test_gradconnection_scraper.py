@@ -1,5 +1,9 @@
 import asyncio
+import inspect
 from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from aujobsscraper.config import settings
 from aujobsscraper.scrapers.gradconnection_scraper import GradConnectionScraper
@@ -54,6 +58,12 @@ def _make_gc_playwright_manager():
     return _FakePlaywrightManager()
 
 
+async def _drain(scraper):
+    """Consume the async generator returned by scraper.scrape()."""
+    async for _ in scraper.scrape():
+        pass
+
+
 def test_gradconnection_regular_run_url_includes_ordering_param(monkeypatch):
     """On a regular run, listing URLs must include ordering=-recent_job_created."""
     scraper = GradConnectionScraper()
@@ -77,7 +87,7 @@ def test_gradconnection_regular_run_url_includes_ordering_param(monkeypatch):
     monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
     monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
 
-    asyncio.run(scraper.scrape())
+    asyncio.run(_drain(scraper))
 
     assert len(seen_urls) == 1
     assert "ordering=-recent_job_created" in seen_urls[0]
@@ -106,7 +116,7 @@ def test_gradconnection_initial_run_url_excludes_ordering_param(monkeypatch):
     monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
     monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
 
-    asyncio.run(scraper.scrape())
+    asyncio.run(_drain(scraper))
 
     assert len(seen_urls) == 1
     assert "ordering=" not in seen_urls[0]
@@ -136,7 +146,7 @@ def test_gradconnection_regular_run_respects_regular_max_pages(monkeypatch):
     monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
     monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
 
-    asyncio.run(scraper.scrape())
+    asyncio.run(_drain(scraper))
 
     assert call_count["n"] == 4
 
@@ -165,7 +175,7 @@ def test_gradconnection_initial_run_uses_max_pages(monkeypatch):
     monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
     monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
 
-    asyncio.run(scraper.scrape())
+    asyncio.run(_drain(scraper))
 
     assert call_count["n"] == 3
 
@@ -274,3 +284,63 @@ def test_extract_salary_returns_none_for_unparseable_salary():
     }
     result = scraper._extract_salary(None, json_data)
     assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Async-generator interface tests
+# ---------------------------------------------------------------------------
+
+def test_gradconnection_scrape_is_async_generator():
+    scraper = GradConnectionScraper()
+    gen = scraper.scrape()
+    assert inspect.isasyncgen(gen)
+
+
+@pytest.mark.asyncio
+async def test_gradconnection_scrape_yields_one_batch_per_page():
+    scraper = GradConnectionScraper()
+
+    link_responses = [
+        ["https://au.gradconnection.com/job/1", "https://au.gradconnection.com/job/2"],
+        [],
+    ]
+    link_call_count = 0
+
+    async def fake_get_job_links(page, url):
+        nonlocal link_call_count
+        links = link_responses[min(link_call_count, len(link_responses) - 1)]
+        link_call_count += 1
+        return links
+
+    async def fake_process_jobs_concurrently(context, urls):
+        for url in urls:
+            job = MagicMock()
+            scraper._results.append(job)
+
+    mock_browser = AsyncMock()
+    mock_context = AsyncMock()
+    mock_page = AsyncMock()
+    mock_browser.new_context.return_value = mock_context
+    mock_context.new_page.return_value = mock_page
+
+    mock_p = AsyncMock()
+    mock_p.chromium.launch.return_value = mock_browser
+
+    with patch.object(scraper, '_get_job_links', fake_get_job_links), \
+         patch.object(scraper, 'process_jobs_concurrently', fake_process_jobs_concurrently), \
+         patch('aujobsscraper.scrapers.gradconnection_scraper.async_playwright') as mock_pw, \
+         patch('aujobsscraper.scrapers.gradconnection_scraper.settings') as mock_settings:
+        mock_pw.return_value.__aenter__.return_value = mock_p
+        mock_pw.return_value.__aexit__ = AsyncMock(return_value=False)
+        mock_settings.gradconnection_keywords = ["software engineer"]
+        mock_settings.initial_run = False
+        mock_settings.max_pages = 5
+        mock_settings.gradconnection_regular_max_pages = 5
+        mock_settings.concurrency = 2
+
+        batches = []
+        async for batch in scraper.scrape():
+            batches.append(list(batch))
+
+    assert len(batches) == 1
+    assert len(batches[0]) == 2

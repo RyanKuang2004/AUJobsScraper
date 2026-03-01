@@ -20,7 +20,7 @@ class GradConnectionScraper(BaseScraper):
         super().__init__("gradconnection")
         self.base_url = "https://au.gradconnection.com"
 
-    async def scrape(self, skip_urls=None) -> list:
+    async def scrape(self, skip_urls=None):
         self.logger.info("Starting GradConnection Scraper...")
         self._results = []
         skip_urls = skip_urls or set()
@@ -66,7 +66,11 @@ class GradConnectionScraper(BaseScraper):
 
                             self.logger.info(f"Found {len(new_links)} NEW jobs on page {page_num}")
 
+                            batch_start = len(self._results)
                             await self.process_jobs_concurrently(context, new_links)
+                            batch = self._results[batch_start:]
+                            if batch:
+                                yield batch
 
                         except Exception as e:
                             self.logger.error(f"Error processing page {page_num}: {e}")
@@ -75,7 +79,6 @@ class GradConnectionScraper(BaseScraper):
                 await browser.close()
 
         self.logger.info("GradConnection Scraper Finished.")
-        return self._results
 
     async def _get_job_links(self, page: Page, url: str) -> List[str] | None:
         try:
@@ -320,10 +323,6 @@ class GradConnectionScraper(BaseScraper):
                         except:
                             return None
         return None
-
-    def run(self):
-        asyncio.run(self.scrape())
-
 
 if __name__ == "__main__":
     scraper = GradConnectionScraper()
