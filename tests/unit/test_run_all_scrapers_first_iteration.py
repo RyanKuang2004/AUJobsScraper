@@ -14,7 +14,7 @@ class _FakeJobPosting:
 
 class _FakeSimpleScraper:
     async def scrape(self, skip_urls=None):
-        return [_FakeJobPosting({"source_urls": ["https://example.com/job/1"]})]
+        yield [_FakeJobPosting({"source_urls": ["https://example.com/job/1"]})]
 
 
 class _FakeProspleScraper:
@@ -27,8 +27,8 @@ class _FakeProspleScraper:
 
     async def scrape(self, skip_urls=None):
         first = await self._get_job_links(None, "https://example.com/start=0")
-        second = await self._get_job_links(None, "https://example.com/start=20")
-        return [_FakeJobPosting({"source_urls": [first[0]["url"]]})] if first and not second else []
+        if first:
+            yield [_FakeJobPosting({"source_urls": [first[0]["url"]]})]
 
 
 def _load_module():

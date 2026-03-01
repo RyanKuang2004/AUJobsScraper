@@ -1,6 +1,9 @@
 import asyncio
+import inspect
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from aujobsscraper.config import settings
 from aujobsscraper.scrapers.prosple_scraper import ProspleScraper
@@ -71,7 +74,7 @@ def test_prosple_regular_run_url_includes_sort_newest_desc(monkeypatch):
     monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
     monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
 
-    asyncio.run(scraper.scrape())
+    asyncio.run(_drain(scraper))
 
     assert len(seen_urls) == 1
     assert "sort=newest_opportunities%7Cdesc" in seen_urls[0]
@@ -101,7 +104,7 @@ def test_prosple_initial_run_url_excludes_sort_param(monkeypatch):
     monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
     monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
 
-    asyncio.run(scraper.scrape())
+    asyncio.run(_drain(scraper))
 
     assert len(seen_urls) == 1
     assert "sort=" not in seen_urls[0]
@@ -217,9 +220,8 @@ def test_scrape_stops_at_configured_max_pages(monkeypatch):
     monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
     monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
 
-    result = asyncio.run(scraper.scrape())
+    asyncio.run(_drain(scraper))
 
-    assert len(result) == 0
     assert calls["count"] == 1
 
 
@@ -273,9 +275,8 @@ def test_scrape_iterates_keywords_and_uses_plus_encoded_tag(monkeypatch):
     monkeypatch.setattr(scraper, "_get_job_links", _fake_get_job_links)
     monkeypatch.setattr(scraper, "process_jobs_concurrently", _fake_process_jobs)
 
-    result = asyncio.run(scraper.scrape())
+    asyncio.run(_drain(scraper))
 
-    assert len(result) == 0
     assert seen_urls == [
         f"{scraper.search_url_base}&keywords=software+engineer&start=0&sort=newest_opportunities%7Cdesc",
         f"{scraper.search_url_base}&keywords=data+scientist&start=0&sort=newest_opportunities%7Cdesc",
@@ -302,3 +303,64 @@ def test_prosple_uses_regular_max_pages_on_regular_run():
         mock_settings.prosple_items_per_page = 20
         limit = mock_settings.max_pages if mock_settings.initial_run else mock_settings.prosple_regular_max_pages
         assert limit == 3
+
+
+# ---------------------------------------------------------------------------
+# Async-generator interface tests
+# ---------------------------------------------------------------------------
+
+async def _drain(scraper):
+    """Consume the async generator returned by scraper.scrape()."""
+    async for _ in scraper.scrape():
+        pass
+
+
+def test_prosple_scrape_is_async_generator():
+    scraper = ProspleScraper()
+    gen = scraper.scrape()
+    assert inspect.isasyncgen(gen)
+
+
+@pytest.mark.asyncio
+async def test_prosple_scrape_yields_one_batch_per_page():
+    scraper = ProspleScraper()
+
+    async def fake_get_job_links(page, url):
+        return [{"url": "https://au.prosple.com/job/1"}]
+
+    page_count = 0
+
+    async def fake_process_jobs_concurrently(context, urls):
+        nonlocal page_count
+        page_count += 1
+        for url in urls:
+            scraper._results.append(MagicMock())
+
+    mock_browser = AsyncMock()
+    mock_context = AsyncMock()
+    mock_page = AsyncMock()
+    mock_browser.new_context.return_value = mock_context
+    mock_context.new_page.return_value = mock_page
+
+    mock_p = AsyncMock()
+    mock_p.chromium.launch.return_value = mock_browser
+
+    with patch.object(scraper, '_get_job_links', fake_get_job_links), \
+         patch.object(scraper, 'process_jobs_concurrently', fake_process_jobs_concurrently), \
+         patch('aujobsscraper.scrapers.prosple_scraper.async_playwright') as mock_pw, \
+         patch('aujobsscraper.scrapers.prosple_scraper.settings') as mock_settings:
+        mock_pw.return_value.__aenter__.return_value = mock_p
+        mock_pw.return_value.__aexit__ = AsyncMock(return_value=False)
+        mock_settings.initial_run = False
+        mock_settings.search_keywords = ["software engineer"]
+        mock_settings.max_pages = 5
+        mock_settings.prosple_regular_max_pages = 1
+        mock_settings.prosple_items_per_page = 10
+        mock_settings.concurrency = 2
+
+        batches = []
+        async for batch in scraper.scrape():
+            batches.append(list(batch))
+
+    assert len(batches) == 1
+    assert len(batches[0]) == 1

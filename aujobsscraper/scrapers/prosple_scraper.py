@@ -19,7 +19,7 @@ class ProspleScraper(BaseScraper):
         self.base_url = "https://au.prosple.com"
         self.search_url_base = "https://au.prosple.com/search-jobs?locations=9692&defaults_applied=1"
 
-    async def scrape(self, skip_urls=None) -> list:
+    async def scrape(self, skip_urls=None):
         self.logger.info("Starting Prosple Scraper...")
         self._results = []
         skip_urls = skip_urls or set()
@@ -69,7 +69,11 @@ class ProspleScraper(BaseScraper):
 
                                 new_links = [d['url'] for d in new_jobs_data]
                                 seen_urls.update(new_links)
+                                batch_start = len(self._results)
                                 await self.process_jobs_concurrently(context, new_links)
+                                batch = self._results[batch_start:]
+                                if batch:
+                                    yield batch
 
                                 page_count += 1
                                 start += items_per_page
@@ -82,10 +86,9 @@ class ProspleScraper(BaseScraper):
                 finally:
                     await browser.close()
 
-            return self._results
         except Exception as e:
             self.logger.error(f"Unhandled error in scrape(): {e}")
-            return self._results
+            return
         finally:
             self.logger.info("Prosple Scraper Finished.")
 
@@ -287,10 +290,6 @@ class ProspleScraper(BaseScraper):
             if closing_date:
                 return closing_date
         return None
-
-    def run(self):
-        asyncio.run(self.scrape())
-
 
 if __name__ == "__main__":
     scraper = ProspleScraper()

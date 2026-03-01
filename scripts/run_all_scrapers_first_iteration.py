@@ -84,7 +84,9 @@ async def run_scraper(scraper_name: str, skip_urls: Optional[set] = None) -> dic
 
     with _temporary_preview_settings():
         scraper = _build_scraper(scraper_name)
-        results = await scraper.scrape(skip_urls=skip_urls)
+        results = []
+        async for batch in scraper.scrape(skip_urls=skip_urls):
+            results.extend(batch)
 
     print(f"\n{scraper_name.title()} scraper finished. Collected {len(results)} jobs.")
     return {
