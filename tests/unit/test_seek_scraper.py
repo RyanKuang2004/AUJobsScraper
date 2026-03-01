@@ -1,6 +1,8 @@
 import inspect
+from datetime import datetime, timedelta
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+from bs4 import BeautifulSoup
 from aujobsscraper.scrapers.seek_scraper import SeekScraper
 
 
@@ -103,3 +105,21 @@ async def test_seek_scrape_skips_known_urls():
 
     assert "https://seek.com.au/job/1" not in processed_urls
     assert "https://seek.com.au/job/2" in processed_urls
+
+
+def test_extract_posted_date_matches_posted_text_without_class_dependency():
+    scraper = SeekScraper()
+    soup = BeautifulSoup("<span>Posted 38m ago</span>", "lxml")
+
+    posted_at = scraper._extract_posted_date(soup)
+
+    assert posted_at == datetime.now().strftime("%Y-%m-%d")
+
+
+def test_extract_posted_date_handles_mixed_day_hour_format():
+    scraper = SeekScraper()
+    soup = BeautifulSoup("<span>Posted 2d/1h ago</span>", "lxml")
+
+    posted_at = scraper._extract_posted_date(soup)
+
+    assert posted_at == (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")

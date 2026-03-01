@@ -145,10 +145,9 @@ def calculate_posted_date(text: str) -> str:
         clean_text = text.replace("Posted", "").replace("ago", "").strip().lower()
         
         days_ago = 0
-        if "d" in clean_text:
-            # Handle "30+d" case
-            clean_text = clean_text.replace("+", "")
-            days_ago = int(clean_text.replace("d", ""))
+        day_match = re.search(r"(\d+)\+?d", clean_text)
+        if day_match:
+            days_ago = int(day_match.group(1))
         elif "h" in clean_text or "m" in clean_text:
             # Hours or minutes ago = today
             days_ago = 0

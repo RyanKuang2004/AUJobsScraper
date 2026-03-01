@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aujobsscraper"
-version = "0.2.3"
+version = "0.2.4"
 description = "Australian job board scrapers — returns JobPosting objects"
 requires-python = ">=3.12"
 dependencies = [

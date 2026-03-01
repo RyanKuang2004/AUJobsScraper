@@ -1,6 +1,7 @@
 # aujobsscraper/scrapers/seek_scraper.py
 import asyncio
 import random
+import re
 from typing import Optional, Set, List
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
@@ -134,12 +135,9 @@ class SeekScraper(BaseScraper):
         return remove_html_tags(raw)
 
     def _extract_posted_date(self, soup):
-        meta_elements = soup.find_all(
-            "span",
-            class_="_1ybl4650 _6wfnkx4x losivq0 losivq1 losivq1u losivq6 _1rtxcgx4"
-        )
-        for elem in meta_elements:
-            if "Posted" in elem.text:
-                return calculate_posted_date(elem.text.strip())
+        for elem in soup.find_all("span"):
+            text = elem.get_text(strip=True)
+            if re.search(r"^Posted\s+\S+\s+ago$", text, re.IGNORECASE):
+                return calculate_posted_date(text)
         return None
 
