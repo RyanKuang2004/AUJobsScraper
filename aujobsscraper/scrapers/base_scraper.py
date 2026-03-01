@@ -1,7 +1,7 @@
 # aujobsscraper/scrapers/base_scraper.py
 import logging
 import asyncio
-from typing import List, Optional, Set
+from typing import AsyncGenerator, List, Optional, Set
 from aujobsscraper.config import settings
 from aujobsscraper.models.job import JobPosting
 from aujobsscraper.models.location import Location
@@ -81,18 +81,24 @@ class BaseScraper:
 
         await asyncio.gather(*[worker(url) for url in job_urls])
 
-    async def scrape(self, skip_urls: Optional[Set[str]] = None) -> List[JobPosting]:
+    async def scrape(
+        self, skip_urls: Optional[Set[str]] = None
+    ) -> AsyncGenerator[List[JobPosting], None]:
         """
-        Run the scraper and return all collected job postings.
-
-        Args:
-            skip_urls: Set of URLs already in the database — these job detail
-                       pages will not be scraped. Pass None to scrape everything.
-
-        Returns:
-            List of JobPosting objects (no DB interaction).
+        Yield batches of JobPosting objects as they are collected.
+        Each yield corresponds to one listing page worth of jobs.
+        Subclasses must implement this as an async generator.
         """
         raise NotImplementedError("Subclasses must implement scrape()")
+        yield  # makes this an async generator
+
+    async def _run_async(self) -> None:
+        """Consume the scrape generator, discarding results (used by run())."""
+        async for _ in self.scrape():
+            pass
+
+    def run(self) -> None:
+        asyncio.run(self._run_async())
 
     async def _process_job(self, page, url: str) -> None:
         """Process a single job posting page."""
