@@ -20,7 +20,7 @@ class SeekScraper(BaseScraper):
         super().__init__("seek")
         self.base_url = "https://www.seek.com.au"
 
-    async def scrape(self, skip_urls: Optional[Set[str]] = None) -> List[JobPosting]:
+    async def scrape(self, skip_urls: Optional[Set[str]] = None):
         self._results = []
         skip_urls = skip_urls or set()
         self.logger.info("Starting Seek Scraper...")
@@ -58,7 +58,11 @@ class SeekScraper(BaseScraper):
                                 self.logger.info(f"Skipping {skipped} already-known URLs.")
 
                             self.logger.info(f"Found {len(new_links)} new jobs on page {page_num}")
+                            batch_start = len(self._results)
                             await self.process_jobs_concurrently(context, new_links)
+                            batch = self._results[batch_start:]
+                            if batch:
+                                yield batch
 
                         except Exception as e:
                             self.logger.error(f"Error processing page {page_num}: {e}")
@@ -66,7 +70,6 @@ class SeekScraper(BaseScraper):
                 await browser.close()
 
         self.logger.info(f"Seek Scraper finished. Collected {len(self._results)} jobs.")
-        return self._results
 
     async def _get_job_links(self, page, url: str) -> list:
         try:
@@ -140,6 +143,3 @@ class SeekScraper(BaseScraper):
                 return calculate_posted_date(elem.text.strip())
         return None
 
-    def run(self):
-        import asyncio
-        return asyncio.run(self.scrape())
