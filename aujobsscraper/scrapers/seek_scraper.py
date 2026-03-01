@@ -133,7 +133,7 @@ class SeekScraper(BaseScraper):
     def _extract_posted_date(self, soup):
         meta_elements = soup.find_all(
             "span",
-            class_="lsj4yq0 _2t4ma4x _1ruehm40 _1ruehm41 _1ruehm41u _1ruehm46 _1rtxcgx4"
+            class_="_1ybl4650 _6wfnkx4x losivq0 losivq1 losivq1u losivq6 _1rtxcgx4"
         )
         for elem in meta_elements:
             if "Posted" in elem.text:
