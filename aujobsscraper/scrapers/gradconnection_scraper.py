@@ -23,7 +23,7 @@ class GradConnectionScraper(BaseScraper):
     async def scrape(self, skip_urls=None):
         self.logger.info("Starting GradConnection Scraper...")
         self._results = []
-        skip_urls = skip_urls or set()
+        seen_urls = set(skip_urls or set())
 
         terms = settings.gradconnection_keywords
         limit = settings.max_pages if settings.initial_run else settings.gradconnection_regular_max_pages
@@ -58,13 +58,14 @@ class GradConnectionScraper(BaseScraper):
                                 self.logger.info("No more results found or error fetching links.")
                                 break
 
-                            new_links = [link for link in job_links if link not in skip_urls]
+                            new_links = [link for link in job_links if link not in seen_urls]
 
                             skipped_count = len(job_links) - len(new_links)
                             if skipped_count > 0:
                                 self.logger.info(f"Skipping {skipped_count} existing jobs.")
 
                             self.logger.info(f"Found {len(new_links)} NEW jobs on page {page_num}")
+                            seen_urls.update(new_links)
 
                             batch_start = len(self._results)
                             await self.process_jobs_concurrently(context, new_links)

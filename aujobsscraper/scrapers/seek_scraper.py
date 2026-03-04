@@ -23,7 +23,7 @@ class SeekScraper(BaseScraper):
 
     async def scrape(self, skip_urls: Optional[Set[str]] = None):
         self._results = []
-        skip_urls = skip_urls or set()
+        seen_urls: Set[str] = set(skip_urls or set())
         self.logger.info("Starting Seek Scraper...")
 
         initial_run = settings.initial_run
@@ -53,10 +53,11 @@ class SeekScraper(BaseScraper):
                                 self.logger.info("No more results found.")
                                 break
 
-                            new_links = [link for link in job_links if link not in skip_urls]
+                            new_links = [link for link in job_links if link not in seen_urls]
                             skipped = len(job_links) - len(new_links)
                             if skipped > 0:
                                 self.logger.info(f"Skipping {skipped} already-known URLs.")
+                            seen_urls.update(new_links)
 
                             self.logger.info(f"Found {len(new_links)} new jobs on page {page_num}")
                             batch_start = len(self._results)
