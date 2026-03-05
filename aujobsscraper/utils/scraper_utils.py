@@ -20,18 +20,74 @@ from .constants import (
 
 def remove_html_tags(content: str) -> str:
     """
-    Remove HTML tags from content and return plain text.
+    Convert HTML content into lightweight Markdown text.
     
     Args:
         content: HTML content as a string
         
     Returns:
-        Plain text with HTML tags removed
+        Markdown-like text with basic structure preserved
     """
     if not content:
         return ""
+
     soup = BeautifulSoup(content, 'lxml')
-    return soup.get_text(separator="\n", strip=True)
+
+    # Convert headings into Markdown headings.
+    for level in range(1, 7):
+        for tag in soup.find_all(f"h{level}"):
+            text = tag.get_text(" ", strip=True)
+            if text:
+                tag.replace_with(f"\n{'#' * level} {text}\n")
+            else:
+                tag.decompose()
+
+    # Treat bold/strong labels as section headings.
+    for tag in soup.find_all(["strong", "b"]):
+        text = tag.get_text(" ", strip=True)
+        if text:
+            tag.replace_with(f"\n## {text}\n")
+        else:
+            tag.decompose()
+
+    # Convert list items into Markdown bullet/numbered lines.
+    for list_tag in soup.find_all(["ul", "ol"]):
+        ordered = list_tag.name == "ol"
+        lines = []
+        for idx, item in enumerate(list_tag.find_all("li", recursive=False), start=1):
+            text = item.get_text(" ", strip=True)
+            if not text:
+                continue
+            marker = f"{idx}. " if ordered else "- "
+            lines.append(f"{marker}{text}")
+        replacement = "\n" + "\n".join(lines) + "\n" if lines else ""
+        list_tag.replace_with(replacement)
+
+    # Ensure paragraphs become separate lines.
+    for tag in soup.find_all("p"):
+        text = tag.get_text(" ", strip=True)
+        if text:
+            tag.replace_with(f"{text}\n")
+        else:
+            tag.decompose()
+
+    for br in soup.find_all("br"):
+        br.replace_with("\n")
+
+    text = soup.get_text(separator="\n", strip=True)
+    lines = [line.rstrip() for line in text.splitlines()]
+
+    # Keep at most one consecutive blank line.
+    cleaned_lines = []
+    previous_blank = False
+    for line in lines:
+        is_blank = not line.strip()
+        if is_blank and previous_blank:
+            continue
+        cleaned_lines.append(line)
+        previous_blank = is_blank
+
+    return "\n".join(cleaned_lines).strip()
 
 
 def extract_salary_from_text(text: str) -> str | None:
