@@ -32,8 +32,8 @@ class _FakeProspleScraper:
 
 
 def _load_module():
-    path = Path("scripts/run_all_scrapers_first_iteration.py")
-    spec = importlib.util.spec_from_file_location("run_all_scrapers_first_iteration", path)
+    path = Path("scripts/run_all_scrapers.py")
+    spec = importlib.util.spec_from_file_location("run_all_scrapers", path)
     module = importlib.util.module_from_spec(spec)
     assert spec is not None
     assert spec.loader is not None
