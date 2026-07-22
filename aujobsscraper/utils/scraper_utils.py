@@ -8,14 +8,34 @@ for common tasks like HTML parsing, text processing, and data extraction.
 import re
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
+from typing import Literal
 
 # Import all constants from the constants module
 from .constants import (
     CITY_TO_STATE,
     STATE_NAMES,
     NON_CITY_PATTERNS,
-    AUSTRALIAN_STATES
+    AUSTRALIAN_STATES,
+    NZ_CITY_TO_REGION,
+    NZ_REGION_NAMES,
 )
+
+_COUNTRY_CONFIG = {
+    "AU": {
+        "city_to_state": CITY_TO_STATE,
+        "state_names": STATE_NAMES,
+        "state_abbrevs": AUSTRALIAN_STATES,
+        "country_names": {"australia", "au"},
+        "country_label": "Australia",
+    },
+    "NZ": {
+        "city_to_state": NZ_CITY_TO_REGION,
+        "state_names": NZ_REGION_NAMES,
+        "state_abbrevs": [],
+        "country_names": {"new zealand", "nz"},
+        "country_label": "New Zealand",
+    },
+}
 
 
 def remove_html_tags(content: str) -> str:
@@ -216,75 +236,80 @@ def calculate_posted_date(text: str) -> str:
 
 
 
-def normalize_locations(locations: list[str]) -> list[dict[str, str]]:
+def normalize_locations(
+    locations: list[str], country: Literal["AU", "NZ"] = "AU"
+) -> list[dict[str, str]]:
     """
     Normalize location strings into structured city/state dictionaries.
-    
-    Converts location strings into structured format with Australian city-to-state mapping.
-    Filters out states, regions, and suburbs to return only main cities.
-    
+
+    Converts location strings into structured format with a country-specific
+    city-to-state (AU) or city-to-region (NZ) mapping. Filters out states,
+    regions, and suburbs to return only main cities.
+
     Examples:
     - "Fortitude Valley, Brisbane QLD" -> {"city": "Brisbane", "state": "QLD"}
     - "Sydney" -> {"city": "Sydney", "state": "NSW"}
-    - "Melbourne CBD and Inner Suburbs" -> {"city": "Melbourne", "state": "VIC"}
+    - "Auckland CBD, Auckland" (country="NZ") -> {"city": "Auckland", "state": "Auckland"}
     - "New South Wales" -> (filtered out, not a city)
-    
+
     Args:
         locations: List of location strings to normalize
-        
+        country: Which country's city/region tables to use ("AU" or "NZ")
+
     Returns:
         List of dictionaries with "city" and "state" keys, containing only valid cities
     """
     if not locations:
         return []
-    
-    # Australian state/territory abbreviations
-    state_pattern = '|'.join(AUSTRALIAN_STATES)
-    
+
+    cfg = _COUNTRY_CONFIG[country]
+    city_to_state = cfg["city_to_state"]
+    state_names = cfg["state_names"]
+    state_abbrevs = cfg["state_abbrevs"]
+    country_names = cfg["country_names"]
+    country_label = cfg["country_label"]
+
+    state_pattern = '|'.join(state_abbrevs) if state_abbrevs else None
+
     normalized = []
-    
+
     for location in locations:
         if not location or not isinstance(location, str):
             continue
-            
+
         # Clean the location string
         location = location.strip()
         location_lower = location.lower()
 
-        # Special case: "Australia" or "AU" - preserve as country-level location
-        if location_lower in ('australia', 'au'):
-            normalized.append({"city": "Australia", "state": ""})
+        # Special case: country name - preserve as country-level location
+        if location_lower in country_names:
+            normalized.append({"city": country_label, "state": ""})
             continue
 
-        # Skip if it's a state name (but not "Australia" which we handled above)
-        if location_lower in STATE_NAMES:
+        # Skip if it's a state/region name (but not the country name, handled above)
+        if location_lower in state_names:
             continue
-        
-        # Skip if it matches non-city patterns
-        skip = False
-        for pattern in NON_CITY_PATTERNS:
-            if re.search(pattern, location_lower):
-                skip = True
-                break
-        if skip:
-            continue
-        
+
         city = None
         state = None
-        
-        # Try to extract state abbreviation from the location string
-        state_match = re.search(rf'\b({state_pattern})\b', location, re.IGNORECASE)
-        
+
+        # Try to extract a state/region abbreviation from the location string
+        # (NZ has no such abbreviations in postings, so state_pattern is None
+        # and this always falls through to the city-lookup branch below)
+        state_match = None
+        if state_pattern:
+            state_match = re.search(rf'\b({state_pattern})\b', location, re.IGNORECASE)
+
         if state_match:
             state = state_match.group(1).upper()
-            
+
             # Extract city name - look for the main city before the state
             # Pattern: "Suburb, City STATE" or "City STATE"
             location_before_state = location[:state_match.start()].strip()
-            
+
             # Remove trailing comma if present
             location_before_state = location_before_state.rstrip(',').strip()
-            
+
             # If there's a comma, take the part after the last comma (the main city)
             # e.g., "Fortitude Valley, Brisbane" -> "Brisbane"
             if ',' in location_before_state:
@@ -294,39 +319,48 @@ def normalize_locations(locations: list[str]) -> list[dict[str, str]]:
             else:
                 # No comma, the whole string before state is the city
                 city_candidate = location_before_state
-            
+
             # Verify this is actually a known city
-            if city_candidate.lower() in CITY_TO_STATE:
+            if city_candidate.lower() in city_to_state:
                 city = city_candidate.title()
             else:
                 # Not in our known cities, but we have a state - use empty city
                 city = ""
         else:
-            # No state abbreviation found, try to identify city from the string
-            # Remove common prefixes and check if it's a known city
-            
+            # No state/region abbreviation found, try to identify city from the string
+
             # First, try to extract city from comma-separated parts
             if ',' in location:
                 parts = [p.strip() for p in location.split(',')]
                 # Try each part to see if it's a known city
                 for part in reversed(parts):  # Start from the end
-                    if part.lower() in CITY_TO_STATE:
+                    if part.lower() in city_to_state:
                         city = part.title()
-                        state = CITY_TO_STATE[part.lower()]
+                        state = city_to_state[part.lower()]
                         break
             else:
                 # Check if the whole location is a known city
-                if location_lower in CITY_TO_STATE:
+                if location_lower in city_to_state:
                     city = location.title()
-                    state = CITY_TO_STATE[location_lower]
-        
-        # Only add valid city entries (city is required, state is optional for country-level locations like "Australia")
+                    state = city_to_state[location_lower]
+
+        # Skip if it matches non-city patterns (only if we couldn't extract a city)
+        if not city:
+            skip = False
+            for pattern in NON_CITY_PATTERNS:
+                if re.search(pattern, location_lower):
+                    skip = True
+                    break
+            if skip:
+                continue
+
+        # Only add valid city entries (city is required, state is optional for country-level locations)
         if city:
             normalized.append({
                 "city": city,
                 "state": state or ""  # Ensure state is never None
             })
-    
+
     # Remove duplicates while preserving order
     seen = set()
     unique_normalized = []
@@ -336,6 +370,6 @@ def normalize_locations(locations: list[str]) -> list[dict[str, str]]:
         if loc_tuple not in seen:
             seen.add(loc_tuple)
             unique_normalized.append(loc)
-    
+
     return unique_normalized
 
