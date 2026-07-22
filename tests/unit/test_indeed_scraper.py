@@ -256,3 +256,50 @@ def test_indeed_explicit_hours_old_overrides_initial_run():
 
         scraper = IndeedScraper(hours_old=48)
         assert scraper.hours_old == 48
+
+
+def test_indeed_scraper_defaults_country_indeed_to_australia():
+    scraper = IndeedScraper()
+    assert scraper.country == "AU"
+    assert scraper.country_indeed == "Australia"
+
+
+def test_indeed_scraper_sets_country_indeed_to_new_zealand():
+    scraper = IndeedScraper(country="NZ")
+    assert scraper.country == "NZ"
+    assert scraper.country_indeed == "New Zealand"
+
+
+def test_indeed_scraper_explicit_country_indeed_overrides_country():
+    scraper = IndeedScraper(country="NZ", country_indeed="Custom Country")
+    assert scraper.country == "NZ"
+    assert scraper.country_indeed == "Custom Country"
+
+
+def test_extract_locations_falls_back_to_new_zealand_for_nz_scraper():
+    scraper = IndeedScraper(country="NZ")
+
+    locations = scraper._extract_locations(None)
+
+    assert len(locations) == 1
+    assert locations[0].city == "New Zealand"
+    assert locations[0].state == ""
+
+
+def test_format_jobpost_maps_nz_location_to_region():
+    scraper = IndeedScraper(country="NZ")
+
+    job_post = {
+        "title": "Software Engineer",
+        "company": "Acme NZ",
+        "job_url": "https://nz.indeed.com/viewjob?jk=123",
+        "location": {"city": "Auckland", "country": "New Zealand"},
+        "description": "Build and maintain backend services in Python for our core platform.",
+        "date_posted": "2026-02-19",
+    }
+
+    posting = scraper.format_jobpost(job_post)
+
+    assert posting is not None
+    assert posting.locations[0].city == "Auckland"
+    assert posting.locations[0].state == "Auckland"

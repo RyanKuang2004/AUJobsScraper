@@ -64,3 +64,25 @@ NON_CITY_PATTERNS = [
 
 # Australian state/territory abbreviations
 AUSTRALIAN_STATES = ['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT']
+
+# New Zealand major city-to-region mapping
+NZ_CITY_TO_REGION = {
+    'auckland': 'Auckland', 'hamilton': 'Waikato', 'tauranga': 'Bay of Plenty',
+    'rotorua': 'Bay of Plenty', 'wellington': 'Wellington', 'lower hutt': 'Wellington',
+    'upper hutt': 'Wellington', 'porirua': 'Wellington', 'palmerston north': 'Manawatu-Whanganui',
+    'whanganui': 'Manawatu-Whanganui', 'napier': "Hawke's Bay", 'hastings': "Hawke's Bay",
+    'new plymouth': 'Taranaki', 'whangarei': 'Northland', 'nelson': 'Nelson',
+    'christchurch': 'Canterbury', 'timaru': 'Canterbury', 'dunedin': 'Otago',
+    'queenstown': 'Otago', 'invercargill': 'Southland', 'gisborne': 'Gisborne',
+    'blenheim': 'Marlborough', 'greymouth': 'West Coast',
+}
+
+# New Zealand region full names to filter out when a location string is a bare
+# region name with no city. Deliberately excludes Auckland, Wellington, Nelson,
+# and Gisborne — unlike Australian states, several NZ regions share their name
+# with their principal city, and those must still resolve as valid cities above.
+NZ_REGION_NAMES = {
+    'waikato', 'bay of plenty', 'manawatu-whanganui', "hawke's bay",
+    'taranaki', 'northland', 'canterbury', 'otago', 'southland',
+    'marlborough', 'west coast', 'tasman', 'new zealand', 'nz',
+}

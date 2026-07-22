@@ -1,6 +1,6 @@
 import asyncio
 from datetime import date, datetime
-from typing import Any, Optional, Set, List
+from typing import Any, Literal, Optional, Set, List
 
 from aujobsscraper.config import settings
 from aujobsscraper.models.job import JobPosting
@@ -24,8 +24,9 @@ class IndeedScraper(BaseScraper):
         hours_old: Optional[int] = None,
         country_indeed: Optional[str] = None,
         term_concurrency: Optional[int] = None,
+        country: Literal["AU", "NZ"] = "AU",
     ):
-        super().__init__("indeed")
+        super().__init__("indeed", country=country)
         self.search_term = (search_term or "").strip()
         self.search_terms = self._resolve_search_terms(search_terms, self.search_term)
         self.google_search_term = google_search_term
@@ -44,9 +45,12 @@ class IndeedScraper(BaseScraper):
             self.hours_old = settings.indeed_initial_hours_old
         else:
             self.hours_old = settings.indeed_hours_old
-        self.country_indeed = (
-            settings.indeed_country if country_indeed is None else country_indeed
-        )
+        if country_indeed is not None:
+            self.country_indeed = country_indeed
+        elif country == "NZ":
+            self.country_indeed = "New Zealand"
+        else:
+            self.country_indeed = settings.indeed_country
         resolved_term_concurrency = (
             settings.indeed_term_concurrency
             if term_concurrency is None
@@ -183,6 +187,7 @@ class IndeedScraper(BaseScraper):
 
     def _extract_locations(self, raw_location: Any) -> list[Location]:
         location_strings = []
+        fallback_country = "New Zealand" if self.country == "NZ" else "Australia"
 
         if isinstance(raw_location, dict):
             city = str(raw_location.get("city") or "").strip()
@@ -199,11 +204,11 @@ class IndeedScraper(BaseScraper):
             location_strings.append(raw_location.strip())
 
         if not location_strings:
-            location_strings.append("Australia")
+            location_strings.append(fallback_country)
 
-        normalized = normalize_locations(location_strings)
+        normalized = normalize_locations(location_strings, country=self.country)
         if not normalized:
-            return [Location(city="Australia", state="")]
+            return [Location(city=fallback_country, state="")]
 
         return [Location(**loc) for loc in normalized]
 
