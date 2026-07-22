@@ -277,8 +277,11 @@ def normalize_locations(
         if not location or not isinstance(location, str):
             continue
 
-        # Clean the location string
+        # Clean the location string. Strip a trailing work-mode annotation
+        # (e.g. "Auckland (Hybrid)", "Waikato (Remote)") - common on Seek NZ
+        # listings - so it doesn't break exact-match city/region lookups.
         location = location.strip()
+        location = re.sub(r'\s*\([^)]*\)\s*$', '', location).strip()
         location_lower = location.lower()
 
         # Special case: country name - preserve as country-level location

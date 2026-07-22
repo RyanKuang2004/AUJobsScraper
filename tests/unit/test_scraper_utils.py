@@ -65,3 +65,18 @@ def test_normalize_locations_defaults_to_australia_when_country_not_passed():
 def test_normalize_locations_still_handles_australia_when_country_explicit():
     result = normalize_locations(["Fortitude Valley, Brisbane QLD"], country="AU")
     assert result == [{"city": "Brisbane", "state": "QLD"}]
+
+
+def test_normalize_locations_strips_hybrid_annotation_from_nz_city():
+    result = normalize_locations(["Auckland (Hybrid)"], country="NZ")
+    assert result == [{"city": "Auckland", "state": "Auckland"}]
+
+
+def test_normalize_locations_strips_remote_annotation_from_nz_region_only():
+    result = normalize_locations(["Waikato (Remote)"], country="NZ")
+    assert result == []
+
+
+def test_normalize_locations_strips_hybrid_annotation_from_nz_comma_separated_city():
+    result = normalize_locations(["Wellington Central, Wellington (Hybrid)"], country="NZ")
+    assert result == [{"city": "Wellington", "state": "Wellington"}]
