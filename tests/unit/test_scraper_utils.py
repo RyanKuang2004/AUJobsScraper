@@ -63,5 +63,5 @@ def test_normalize_locations_defaults_to_australia_when_country_not_passed():
 
 
 def test_normalize_locations_still_handles_australia_when_country_explicit():
-    result = normalize_locations(["Melbourne CBD and Inner Suburbs, Melbourne VIC"], country="AU")
-    assert result == [{"city": "Melbourne", "state": "VIC"}]
+    result = normalize_locations(["Fortitude Valley, Brisbane QLD"], country="AU")
+    assert result == [{"city": "Brisbane", "state": "QLD"}]

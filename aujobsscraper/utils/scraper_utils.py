@@ -290,6 +290,15 @@ def normalize_locations(
         if location_lower in state_names:
             continue
 
+        # Skip if it matches non-city patterns (e.g., "Greater X", "Inner Suburbs")
+        skip = False
+        for pattern in NON_CITY_PATTERNS:
+            if re.search(pattern, location_lower):
+                skip = True
+                break
+        if skip:
+            continue
+
         city = None
         state = None
 
@@ -343,16 +352,6 @@ def normalize_locations(
                 if location_lower in city_to_state:
                     city = location.title()
                     state = city_to_state[location_lower]
-
-        # Skip if it matches non-city patterns (only if we couldn't extract a city)
-        if not city:
-            skip = False
-            for pattern in NON_CITY_PATTERNS:
-                if re.search(pattern, location_lower):
-                    skip = True
-                    break
-            if skip:
-                continue
 
         # Only add valid city entries (city is required, state is optional for country-level locations)
         if city:
