@@ -1,7 +1,7 @@
 # aujobsscraper/scrapers/base_scraper.py
 import logging
 import asyncio
-from typing import AsyncGenerator, List, Optional, Set
+from typing import AsyncGenerator, List, Literal, Optional, Set
 from aujobsscraper.config import settings
 from aujobsscraper.models.job import JobPosting
 from aujobsscraper.models.location import Location
@@ -14,8 +14,9 @@ logging.basicConfig(
 
 
 class BaseScraper:
-    def __init__(self, platform_name: str):
+    def __init__(self, platform_name: str, country: Literal["AU", "NZ"] = "AU"):
         self.platform = platform_name
+        self.country = country
         self.logger = logging.getLogger(f"Scraper-{platform_name}")
         self._results: List[JobPosting] = []
 
@@ -29,7 +30,7 @@ class BaseScraper:
         **optional_fields
     ) -> JobPosting:
         """Build a JobPosting from extracted data. Handles location normalization."""
-        normalized_locs = normalize_locations(raw_locations)
+        normalized_locs = normalize_locations(raw_locations, country=self.country)
         location_objs = [Location(**loc) for loc in normalized_locs]
         return JobPosting(
             job_title=job_title,
