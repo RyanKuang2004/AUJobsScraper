@@ -123,3 +123,33 @@ def test_extract_posted_date_handles_mixed_day_hour_format():
     posted_at = scraper._extract_posted_date(soup)
 
     assert posted_at == (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
+
+
+def test_seek_scraper_defaults_to_au_base_url():
+    scraper = SeekScraper()
+    assert scraper.base_url == "https://www.seek.com.au"
+    assert scraper.country == "AU"
+
+
+def test_seek_scraper_uses_nz_base_url_when_country_nz():
+    scraper = SeekScraper(country="NZ")
+    assert scraper.base_url == "https://nz.seek.com"
+    assert scraper.country == "NZ"
+
+
+def test_extract_location_falls_back_to_new_zealand_for_nz_scraper():
+    scraper = SeekScraper(country="NZ")
+    soup = BeautifulSoup("<div>no location element here</div>", "lxml")
+
+    location = scraper._extract_location(soup)
+
+    assert location == "New Zealand"
+
+
+def test_extract_location_falls_back_to_australia_for_au_scraper():
+    scraper = SeekScraper()
+    soup = BeautifulSoup("<div>no location element here</div>", "lxml")
+
+    location = scraper._extract_location(soup)
+
+    assert location == "Australia"

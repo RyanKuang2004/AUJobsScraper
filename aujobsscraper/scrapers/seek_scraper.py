@@ -2,7 +2,7 @@
 import asyncio
 import random
 import re
-from typing import Optional, Set, List
+from typing import Literal, Optional, Set, List
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
 from aujobsscraper.scrapers.base_scraper import BaseScraper
@@ -17,9 +17,9 @@ from aujobsscraper.models.job import JobPosting
 
 
 class SeekScraper(BaseScraper):
-    def __init__(self):
-        super().__init__("seek")
-        self.base_url = "https://www.seek.com.au"
+    def __init__(self, country: Literal["AU", "NZ"] = "AU"):
+        super().__init__("seek", country=country)
+        self.base_url = "https://nz.seek.com" if country == "NZ" else "https://www.seek.com.au"
 
     async def scrape(self, skip_urls: Optional[Set[str]] = None):
         self._results = []
@@ -124,7 +124,9 @@ class SeekScraper(BaseScraper):
 
     def _extract_location(self, soup) -> str:
         elem = soup.find("span", attrs={"data-automation": "job-detail-location"})
-        return elem.text.strip() if elem else "Australia"
+        if elem:
+            return elem.text.strip()
+        return "New Zealand" if self.country == "NZ" else "Australia"
 
     def _extract_salary(self, soup):
         elem = soup.find("span", attrs={"data-automation": "job-detail-salary"})
