@@ -72,11 +72,18 @@ def test_normalize_locations_strips_hybrid_annotation_from_nz_city():
     assert result == [{"city": "Auckland", "state": "Auckland"}]
 
 
-def test_normalize_locations_strips_remote_annotation_from_nz_region_only():
-    result = normalize_locations(["Waikato (Remote)"], country="NZ")
-    assert result == []
+def test_normalize_locations_strips_remote_annotation_from_nz_comma_separated_city():
+    # Without stripping, "Hamilton (Remote)" fails the exact-match city lookup
+    # entirely (neither comma part matches), so the location is wrongly dropped.
+    result = normalize_locations(["Hamilton CBD, Hamilton (Remote)"], country="NZ")
+    assert result == [{"city": "Hamilton", "state": "Waikato"}]
 
 
 def test_normalize_locations_strips_hybrid_annotation_from_nz_comma_separated_city():
     result = normalize_locations(["Wellington Central, Wellington (Hybrid)"], country="NZ")
     assert result == [{"city": "Wellington", "state": "Wellington"}]
+
+
+def test_normalize_locations_strips_hybrid_annotation_from_au_location():
+    result = normalize_locations(["Sydney NSW (Hybrid)"], country="AU")
+    assert result == [{"city": "Sydney", "state": "NSW"}]
