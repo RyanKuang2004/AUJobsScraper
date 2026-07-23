@@ -36,6 +36,7 @@ class BaseScraper:
             job_title=job_title,
             company=company,
             description=description,
+            description_markdown=optional_fields.get("description_markdown"),
             locations=location_objs,
             source_urls=[source_url],
             platforms=[self.platform],

@@ -52,3 +52,38 @@ def test_build_job_posting_normalizes_locations_using_country():
     )
     assert posting.locations[0].city == "Wellington"
     assert posting.locations[0].state == "Wellington"
+
+
+def test_build_job_posting_passes_through_description_markdown():
+    class MinimalScraper(BaseScraper):
+        async def scrape(self, skip_urls=None):
+            raise NotImplementedError
+            yield
+
+    scraper = MinimalScraper("test")
+    posting = scraper._build_job_posting(
+        job_title="Backend Engineer",
+        company="Acme",
+        raw_locations=["Sydney"],
+        source_url="https://seek.com.au/job/1",
+        description="A sufficiently long description for validation purposes.",
+        description_markdown="## Responsibilities\n- Build things",
+    )
+    assert posting.description_markdown == "## Responsibilities\n- Build things"
+
+
+def test_build_job_posting_defaults_description_markdown_to_none():
+    class MinimalScraper(BaseScraper):
+        async def scrape(self, skip_urls=None):
+            raise NotImplementedError
+            yield
+
+    scraper = MinimalScraper("test")
+    posting = scraper._build_job_posting(
+        job_title="Backend Engineer",
+        company="Acme",
+        raw_locations=["Sydney"],
+        source_url="https://seek.com.au/job/1",
+        description="A sufficiently long description for validation purposes.",
+    )
+    assert posting.description_markdown is None
