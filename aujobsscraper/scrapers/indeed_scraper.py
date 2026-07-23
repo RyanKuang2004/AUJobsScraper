@@ -167,6 +167,7 @@ class IndeedScraper(BaseScraper):
             results_wanted=self.results_wanted,
             hours_old=self.hours_old,
             country_indeed=self.country_indeed,
+            description_format="markdown",
         )
 
     def _rows_to_records(self, rows: Any) -> list[dict[str, Any]]:
