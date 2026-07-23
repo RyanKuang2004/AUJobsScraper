@@ -9,6 +9,7 @@ from aujobsscraper.scrapers.base_scraper import BaseScraper
 from aujobsscraper.config import settings
 from aujobsscraper.utils.scraper_utils import (
     remove_html_tags,
+    html_to_markdown,
     extract_salary_from_text,
     normalize_salary,
     normalize_locations,
@@ -137,6 +138,7 @@ class GradConnectionScraper(BaseScraper):
                 "company": company,
                 "locations": self._extract_locations(soup, json_data),
                 "description": self._extract_description(soup),
+                "description_markdown": self._extract_description_markdown(soup),
                 "salary": self._extract_salary(soup, json_data),
                 "posted_at": self._extract_posted_date(soup),
                 "closing_date": self._extract_closing_date(soup, json_data),
@@ -148,6 +150,7 @@ class GradConnectionScraper(BaseScraper):
                 raw_locations=extracted["locations"],
                 source_url=job_url,
                 description=extracted["description"],
+                description_markdown=extracted["description_markdown"],
                 salary=extracted.get("salary"),
                 posted_at=extracted.get("posted_at"),
                 closing_date=extracted.get("closing_date"),
@@ -277,14 +280,20 @@ class GradConnectionScraper(BaseScraper):
                     return normalized
         return None
 
-    def _extract_description(self, soup) -> str:
+    def _get_description_html(self, soup) -> str:
         desc_elem = soup.select_one("div.campaign-content-container")
         if desc_elem:
-            return remove_html_tags(str(desc_elem))
+            return str(desc_elem)
         desc_elem = soup.select_one("div.job-description-container")
         if desc_elem:
-            return remove_html_tags(str(desc_elem))
-        return remove_html_tags(str(soup.body))
+            return str(desc_elem)
+        return str(soup.body)
+
+    def _extract_description(self, soup) -> str:
+        return remove_html_tags(self._get_description_html(soup))
+
+    def _extract_description_markdown(self, soup) -> str:
+        return html_to_markdown(self._get_description_html(soup))
 
     def _extract_posted_date(self, soup) -> Optional[str]:
         box_content = soup.select_one("ul.box-content")

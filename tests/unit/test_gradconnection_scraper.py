@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from bs4 import BeautifulSoup
 
 from aujobsscraper.config import settings
 from aujobsscraper.scrapers.gradconnection_scraper import GradConnectionScraper
@@ -344,3 +345,26 @@ async def test_gradconnection_scrape_yields_one_batch_per_page():
 
     assert len(batches) == 1
     assert len(batches[0]) == 2
+
+
+def test_extract_description_markdown_converts_campaign_content():
+    scraper = GradConnectionScraper()
+    soup = BeautifulSoup(
+        '<div class="campaign-content-container"><h2>Overview</h2>'
+        '<ul><li>Graduate program</li></ul></div>',
+        "lxml",
+    )
+
+    markdown = scraper._extract_description_markdown(soup)
+
+    assert "## Overview" in markdown
+    assert "- Graduate program" in markdown
+
+
+def test_extract_description_markdown_falls_back_to_body():
+    scraper = GradConnectionScraper()
+    soup = BeautifulSoup("<body><p>Fallback <em>text</em></p></body>", "lxml")
+
+    markdown = scraper._extract_description_markdown(soup)
+
+    assert "Fallback" in markdown
