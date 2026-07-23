@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from bs4 import BeautifulSoup
 
 from aujobsscraper.config import settings
 from aujobsscraper.scrapers.prosple_scraper import ProspleScraper
@@ -364,3 +365,23 @@ async def test_prosple_scrape_yields_one_batch_per_page():
 
     assert len(batches) == 1
     assert len(batches[0]) == 1
+
+
+def test_extract_description_markdown_uses_json_ld_description():
+    scraper = ProspleScraper()
+    json_data = {"description": "<h2>About</h2><ul><li>Grad rotation</li></ul>"}
+    soup = BeautifulSoup("<body></body>", "lxml")
+
+    markdown = scraper._extract_description_markdown(soup, json_data)
+
+    assert "## About" in markdown
+    assert "- Grad rotation" in markdown
+
+
+def test_extract_description_markdown_falls_back_to_body_when_no_json():
+    scraper = ProspleScraper()
+    soup = BeautifulSoup("<body><p>Fallback <strong>role</strong></p></body>", "lxml")
+
+    markdown = scraper._extract_description_markdown(soup, None)
+
+    assert "Fallback" in markdown

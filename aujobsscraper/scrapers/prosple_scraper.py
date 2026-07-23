@@ -8,6 +8,7 @@ from aujobsscraper.scrapers.base_scraper import BaseScraper
 from aujobsscraper.config import settings
 from aujobsscraper.utils.scraper_utils import (
     remove_html_tags,
+    html_to_markdown,
     extract_salary_from_text,
     normalize_salary,
     normalize_locations,
@@ -148,6 +149,7 @@ class ProspleScraper(BaseScraper):
                 "company": company,
                 "locations": self._extract_locations(soup, json_data),
                 "description": self._extract_description(soup, json_data),
+                "description_markdown": self._extract_description_markdown(soup, json_data),
                 "salary": self._extract_salary(soup, json_data),
                 "posted_at": self._extract_posted_date(json_data),
                 "closing_date": self._extract_closing_date(json_data),
@@ -159,6 +161,7 @@ class ProspleScraper(BaseScraper):
                 raw_locations=extracted["locations"],
                 source_url=job_url,
                 description=extracted["description"],
+                description_markdown=extracted["description_markdown"],
                 salary=extracted.get("salary"),
                 posted_at=extracted.get("posted_at"),
                 closing_date=extracted.get("closing_date"),
@@ -270,12 +273,18 @@ class ProspleScraper(BaseScraper):
                     return normalized
         return None
 
-    def _extract_description(self, soup, json_data: Optional[Dict]) -> str:
+    def _get_description_html(self, soup, json_data: Optional[Dict]) -> str:
         if json_data:
             description_html = json_data.get('description', "")
             if description_html:
-                return remove_html_tags(description_html)
-        return remove_html_tags(str(soup.body)) if soup.body else ""
+                return description_html
+        return str(soup.body) if soup.body else ""
+
+    def _extract_description(self, soup, json_data: Optional[Dict]) -> str:
+        return remove_html_tags(self._get_description_html(soup, json_data))
+
+    def _extract_description_markdown(self, soup, json_data: Optional[Dict]) -> str:
+        return html_to_markdown(self._get_description_html(soup, json_data))
 
     def _extract_posted_date(self, json_data: Optional[Dict]) -> Optional[str]:
         if json_data:
