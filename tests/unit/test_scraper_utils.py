@@ -1,4 +1,5 @@
 from aujobsscraper.utils.scraper_utils import remove_html_tags, normalize_locations
+from aujobsscraper.utils.scraper_utils import html_to_markdown
 
 
 def test_remove_html_tags_converts_html_to_markdown_structure():
@@ -87,3 +88,50 @@ def test_normalize_locations_strips_hybrid_annotation_from_nz_comma_separated_ci
 def test_normalize_locations_strips_hybrid_annotation_from_au_location():
     result = normalize_locations(["Sydney NSW (Hybrid)"], country="AU")
     assert result == [{"city": "Sydney", "state": "NSW"}]
+
+
+def test_html_to_markdown_converts_headings_and_lists():
+    html = """
+    <div>
+      <h2>What You'll Do</h2>
+      <ul>
+        <li>Build APIs</li>
+        <li>Review code</li>
+      </ul>
+    </div>
+    """
+
+    result = html_to_markdown(html)
+
+    assert "## What You'll Do" in result
+    assert "- Build APIs" in result
+    assert "- Review code" in result
+
+
+def test_html_to_markdown_preserves_links_and_emphasis():
+    html = "<p>Apply via <a href='https://example.com/apply'>this link</a> and bring <em>enthusiasm</em>.</p>"
+
+    result = html_to_markdown(html)
+
+    assert "[this link](https://example.com/apply)" in result
+    assert "_enthusiasm_" in result or "*enthusiasm*" in result
+
+
+def test_html_to_markdown_strips_script_and_style_tags():
+    html = "<div><style>.x{color:red}</style><script>alert('x')</script><p>Real content</p></div>"
+
+    result = html_to_markdown(html)
+
+    assert "Real content" in result
+    assert "alert" not in result
+    assert "color:red" not in result
+
+
+def test_html_to_markdown_returns_empty_string_for_empty_input():
+    assert html_to_markdown("") == ""
+    assert html_to_markdown(None) == ""
+
+
+def test_html_to_markdown_never_raises_on_malformed_html():
+    result = html_to_markdown("<div><p>Unclosed paragraph<div>Nested badly</div>")
+    assert isinstance(result, str)

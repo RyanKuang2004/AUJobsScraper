@@ -9,6 +9,7 @@ import re
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 from typing import Literal
+from markdownify import markdownify as _markdownify
 
 # Import all constants from the constants module
 from .constants import (
@@ -108,6 +109,28 @@ def remove_html_tags(content: str) -> str:
         previous_blank = is_blank
 
     return "\n".join(cleaned_lines).strip()
+
+
+def html_to_markdown(html: str) -> str:
+    """
+    Convert HTML content into Markdown using the markdownify library.
+
+    Args:
+        html: HTML content as a string
+
+    Returns:
+        Markdown text, or "" if input is empty or conversion fails.
+    """
+    if not html:
+        return ""
+
+    try:
+        soup = BeautifulSoup(html, 'lxml')
+        for tag in soup.find_all(["script", "style"]):
+            tag.decompose()
+        return _markdownify(str(soup), heading_style="ATX", bullets="-").strip()
+    except Exception:
+        return ""
 
 
 def extract_salary_from_text(text: str) -> str | None:

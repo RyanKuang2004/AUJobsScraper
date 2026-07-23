@@ -1,6 +1,7 @@
 from aujobsscraper.utils.scraper_utils import (
     normalize_locations,
     remove_html_tags,
+    html_to_markdown,
     calculate_posted_date,
     normalize_salary,
     extract_salary_from_text,
@@ -9,6 +10,7 @@ from aujobsscraper.utils.scraper_utils import (
 __all__ = [
     "normalize_locations",
     "remove_html_tags",
+    "html_to_markdown",
     "calculate_posted_date",
     "normalize_salary",
     "extract_salary_from_text",
