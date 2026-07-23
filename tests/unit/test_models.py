@@ -87,3 +87,40 @@ def test_job_posting_has_no_llm_fields():
     assert "seniority" not in d
     assert "core_languages" not in d
     assert "llm_extracted_at" not in d
+
+
+def test_job_posting_description_markdown_defaults_to_none():
+    posting = JobPosting(
+        job_title="Backend Engineer",
+        company="Acme",
+        description="A sufficiently long description for validation purposes.",
+        locations=[],
+        source_urls=["https://example.com/job/1"],
+        platforms=["seek"],
+    )
+    assert posting.description_markdown is None
+
+
+def test_job_posting_description_markdown_accepts_value():
+    posting = JobPosting(
+        job_title="Backend Engineer",
+        company="Acme",
+        description="A sufficiently long description for validation purposes.",
+        description_markdown="## Responsibilities\n- Build things",
+        locations=[],
+        source_urls=["https://example.com/job/1"],
+        platforms=["seek"],
+    )
+    assert posting.description_markdown == "## Responsibilities\n- Build things"
+
+
+def test_job_posting_validate_does_not_require_description_markdown():
+    posting = JobPosting(
+        job_title="Backend Engineer",
+        company="Acme",
+        description="A sufficiently long description for validation purposes.",
+        locations=[Location(city="Sydney", state="NSW")],
+        source_urls=["https://example.com/job/1"],
+        platforms=["seek"],
+    )
+    assert posting.validate() == []

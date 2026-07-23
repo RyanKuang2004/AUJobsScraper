@@ -14,6 +14,9 @@ class JobPosting(BaseModel):
     job_title: str = Field(..., description="Original job title from posting")
     company: str = Field(..., description="Company name")
     description: str = Field(..., description="Full job description text")
+    description_markdown: Optional[str] = Field(
+        None, description="Job description converted from HTML to Markdown for display"
+    )
 
     # Fingerprint (auto-generated)
     fingerprint: Optional[str] = Field(None, description="Unique fingerprint for deduplication")
