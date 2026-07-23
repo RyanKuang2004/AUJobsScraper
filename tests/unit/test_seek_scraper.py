@@ -153,3 +153,31 @@ def test_extract_location_falls_back_to_australia_for_au_scraper():
     location = scraper._extract_location(soup)
 
     assert location == "Australia"
+
+
+def test_extract_description_markdown_converts_job_ad_details():
+    scraper = SeekScraper()
+    soup = BeautifulSoup(
+        '<div data-automation="jobAdDetails"><h2>About the role</h2>'
+        '<ul><li>Ship features</li></ul></div>',
+        "lxml",
+    )
+
+    markdown = scraper._extract_description_markdown(soup)
+
+    assert "## About the role" in markdown
+    assert "- Ship features" in markdown
+
+
+def test_extract_description_and_markdown_share_same_source_element():
+    scraper = SeekScraper()
+    soup = BeautifulSoup(
+        '<div data-automation="jobAdDetails"><p>Great <a href="https://example.com">opportunity</a></p></div>',
+        "lxml",
+    )
+
+    plain = scraper._extract_description(soup)
+    markdown = scraper._extract_description_markdown(soup)
+
+    assert "opportunity" in plain
+    assert "[opportunity](https://example.com)" in markdown

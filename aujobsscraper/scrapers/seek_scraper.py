@@ -9,6 +9,7 @@ from aujobsscraper.scrapers.base_scraper import BaseScraper
 from aujobsscraper.config import settings
 from aujobsscraper.utils.scraper_utils import (
     remove_html_tags,
+    html_to_markdown,
     calculate_posted_date,
     normalize_locations,
     normalize_salary
@@ -106,6 +107,7 @@ class SeekScraper(BaseScraper):
                 raw_locations=[self._extract_location(soup)],
                 source_url=job_url,
                 description=self._extract_description(soup),
+                description_markdown=self._extract_description_markdown(soup),
                 salary=normalize_salary(self._extract_salary(soup)),
                 posted_at=self._extract_posted_date(soup),
             )
@@ -132,10 +134,15 @@ class SeekScraper(BaseScraper):
         elem = soup.find("span", attrs={"data-automation": "job-detail-salary"})
         return elem.text.strip() if elem else None
 
-    def _extract_description(self, soup) -> str:
+    def _get_description_html(self, soup) -> str:
         elem = soup.find("div", attrs={"data-automation": "jobAdDetails"})
-        raw = str(elem) if elem else str(soup.find("body"))
-        return remove_html_tags(raw)
+        return str(elem) if elem else str(soup.find("body"))
+
+    def _extract_description(self, soup) -> str:
+        return remove_html_tags(self._get_description_html(soup))
+
+    def _extract_description_markdown(self, soup) -> str:
+        return html_to_markdown(self._get_description_html(soup))
 
     def _extract_posted_date(self, soup):
         for elem in soup.find_all("span"):
