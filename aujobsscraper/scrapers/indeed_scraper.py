@@ -123,6 +123,7 @@ class IndeedScraper(BaseScraper):
             job_title=title,
             company=company,
             description=description,
+            description_markdown=description,
             locations=locations,
             source_urls=[source_url] if source_url else [],
             platforms=[self.platform],

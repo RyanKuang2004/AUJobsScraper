@@ -303,3 +303,20 @@ def test_format_jobpost_maps_nz_location_to_region():
     assert posting is not None
     assert posting.locations[0].city == "Auckland"
     assert posting.locations[0].state == "Auckland"
+
+
+def test_format_jobpost_copies_description_into_description_markdown():
+    scraper = IndeedScraper()
+    job_post = {
+        "title": "Software Engineer",
+        "company": "Acme",
+        "location": {"city": "Sydney", "state": "NSW", "country": "Australia"},
+        "job_url": "https://indeed.com/job/1",
+        "description": "## Responsibilities\n- Build backend services in Python.",
+    }
+
+    posting = scraper.format_jobpost(job_post)
+
+    assert posting is not None
+    assert posting.description_markdown == posting.description
+    assert posting.description_markdown == "## Responsibilities\n- Build backend services in Python."
