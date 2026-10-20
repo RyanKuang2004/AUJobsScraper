@@ -25,6 +25,10 @@ class PostedTime(NamedTuple):
     ts: Optional[str]
     precision: Optional[Precision]
 
+    def as_fields(self) -> dict:
+        """Keyword arguments for JobPosting / _build_job_posting."""
+        return {"posted_at": self.date, "posted_at_ts": self.ts, "posted_at_precision": self.precision}
+
 
 EMPTY = PostedTime(None, None, None)
 

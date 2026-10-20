@@ -344,3 +344,18 @@ async def test_gradconnection_scrape_yields_one_batch_per_page():
 
     assert len(batches) == 1
     assert len(batches[0]) == 2
+
+
+def test_extract_posted_date_keeps_time_as_minute_precision():
+    from bs4 import BeautifulSoup
+
+    scraper = GradConnectionScraper()
+    soup = BeautifulSoup(
+        "<ul class='box-content'><li><strong>Posted</strong> 2026-10-19T22:15:00Z</li></ul>", "lxml"
+    )
+
+    posted = scraper._extract_posted_date(soup)
+
+    assert posted.precision == "minute"
+    assert posted.date == "2026-10-20"
+    assert posted.ts == "2026-10-20T09:15:00+11:00"

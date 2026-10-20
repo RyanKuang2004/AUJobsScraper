@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 from aujobsscraper.scrapers.base_scraper import BaseScraper
 from aujobsscraper.config import settings
+from aujobsscraper.utils.posted_time import EMPTY, PostedTime, from_iso
 from aujobsscraper.utils.scraper_utils import (
     remove_html_tags,
     extract_salary_from_text,
@@ -138,7 +139,7 @@ class GradConnectionScraper(BaseScraper):
                 "locations": self._extract_locations(soup, json_data),
                 "description": self._extract_description(soup),
                 "salary": self._extract_salary(soup, json_data),
-                "posted_at": self._extract_posted_date(soup),
+                "posted": self._extract_posted_date(soup),
                 "closing_date": self._extract_closing_date(soup, json_data),
             }
 
@@ -149,8 +150,8 @@ class GradConnectionScraper(BaseScraper):
                 source_url=job_url,
                 description=extracted["description"],
                 salary=extracted.get("salary"),
-                posted_at=extracted.get("posted_at"),
                 closing_date=extracted.get("closing_date"),
+                **extracted["posted"].as_fields(),
             )
 
             self._collect_job(job_posting)
@@ -286,18 +287,15 @@ class GradConnectionScraper(BaseScraper):
             return remove_html_tags(str(desc_elem))
         return remove_html_tags(str(soup.body))
 
-    def _extract_posted_date(self, soup) -> Optional[str]:
+    def _extract_posted_date(self, soup) -> PostedTime:
         box_content = soup.select_one("ul.box-content")
         if box_content:
             for li in box_content.find_all("li"):
                 strong = li.find("strong")
                 if strong and "posted" in strong.text.strip().lower():
                     value = li.text.replace(strong.text, "").strip()
-                    try:
-                        return datetime.fromisoformat(value.replace("Z", "+00:00")).date().isoformat()
-                    except:
-                        return None
-        return None
+                    return from_iso(value, self.country)
+        return EMPTY
 
     def _extract_closing_date(self, soup, json_data: Optional[Dict]) -> Optional[str]:
         if json_data:

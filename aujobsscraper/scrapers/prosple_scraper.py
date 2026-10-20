@@ -6,6 +6,7 @@ from playwright.async_api import async_playwright, Page
 from bs4 import BeautifulSoup
 from aujobsscraper.scrapers.base_scraper import BaseScraper
 from aujobsscraper.config import settings
+from aujobsscraper.utils.posted_time import EMPTY, PostedTime, from_iso
 from aujobsscraper.utils.scraper_utils import (
     remove_html_tags,
     extract_salary_from_text,
@@ -149,7 +150,7 @@ class ProspleScraper(BaseScraper):
                 "locations": self._extract_locations(soup, json_data),
                 "description": self._extract_description(soup, json_data),
                 "salary": self._extract_salary(soup, json_data),
-                "posted_at": self._extract_posted_date(json_data),
+                "posted": self._extract_posted_date(json_data),
                 "closing_date": self._extract_closing_date(json_data),
             }
 
@@ -160,8 +161,8 @@ class ProspleScraper(BaseScraper):
                 source_url=job_url,
                 description=extracted["description"],
                 salary=extracted.get("salary"),
-                posted_at=extracted.get("posted_at"),
                 closing_date=extracted.get("closing_date"),
+                **extracted["posted"].as_fields(),
             )
 
             self._collect_job(job_posting)
@@ -277,12 +278,10 @@ class ProspleScraper(BaseScraper):
                 return remove_html_tags(description_html)
         return remove_html_tags(str(soup.body)) if soup.body else ""
 
-    def _extract_posted_date(self, json_data: Optional[Dict]) -> Optional[str]:
+    def _extract_posted_date(self, json_data: Optional[Dict]) -> PostedTime:
         if json_data:
-            posted_at = json_data.get('datePosted')
-            if posted_at:
-                return posted_at
-        return None
+            return from_iso(json_data.get('datePosted'), self.country)
+        return EMPTY
 
     def _extract_closing_date(self, json_data: Optional[Dict]) -> Optional[str]:
         if json_data:

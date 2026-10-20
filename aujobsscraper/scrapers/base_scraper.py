@@ -41,6 +41,8 @@ class BaseScraper:
             platforms=[self.platform],
             salary=optional_fields.get("salary"),
             posted_at=optional_fields.get("posted_at"),
+            posted_at_ts=optional_fields.get("posted_at_ts"),
+            posted_at_precision=optional_fields.get("posted_at_precision"),
             closing_date=optional_fields.get("closing_date"),
         )
 

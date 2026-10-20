@@ -1,7 +1,7 @@
 # aujobsscraper/models/job.py
 """Job posting model — scraping fields only (no LLM extraction fields)"""
 
-from typing import List, Optional, Dict, Any
+from typing import List, Literal, Optional, Dict, Any
 from pydantic import BaseModel, Field, field_validator, model_validator
 from aujobsscraper.models.location import Location
 from aujobsscraper.models.fingerprint import FingerprintGenerator
@@ -25,7 +25,11 @@ class JobPosting(BaseModel):
 
     # Optional scraping fields
     salary: Optional[Dict[str, float]] = Field(None, description="Structured salary info {annual_min, annual_max}")
-    posted_at: Optional[str] = Field(None, description="Date posted (ISO format)")
+    posted_at: Optional[str] = Field(None, description="Date posted (ISO format, board-local)")
+    posted_at_ts: Optional[str] = Field(None, description="Posting time, ISO 8601 with UTC offset")
+    posted_at_precision: Optional[Literal["minute", "hour", "day"]] = Field(
+        None, description="How precise posted_at_ts is"
+    )
     closing_date: Optional[str] = Field(None, description="Application closing date (ISO format)")
 
     class Config:

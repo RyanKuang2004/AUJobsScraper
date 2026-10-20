@@ -1,9 +1,11 @@
 import inspect
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from bs4 import BeautifulSoup
 from aujobsscraper.scrapers.seek_scraper import SeekScraper
+from aujobsscraper.utils import posted_time
+from aujobsscraper.utils.posted_time import EMPTY, from_relative
 
 
 def test_seek_scrape_is_async_generator():
@@ -107,22 +109,43 @@ async def test_seek_scrape_skips_known_urls():
     assert "https://seek.com.au/job/2" in processed_urls
 
 
-def test_extract_posted_date_matches_posted_text_without_class_dependency():
+NOW = datetime(2026, 10, 19, 18, 30, tzinfo=timezone.utc)  # 05:30 AEDT on 2026-10-20
+
+
+@pytest.fixture
+def frozen_now(monkeypatch):
+    monkeypatch.setattr(posted_time, "_utcnow", lambda: NOW)
+
+
+def test_extract_posted_date_matches_posted_text_without_class_dependency(frozen_now):
     scraper = SeekScraper()
     soup = BeautifulSoup("<span>Posted 38m ago</span>", "lxml")
 
-    posted_at = scraper._extract_posted_date(soup)
-
-    assert posted_at == datetime.now().strftime("%Y-%m-%d")
+    assert scraper._extract_posted_date(soup) == from_relative("Posted 38m ago", "AU", now=NOW)
 
 
-def test_extract_posted_date_handles_mixed_day_hour_format():
+def test_extract_posted_date_handles_mixed_day_hour_format(frozen_now):
     scraper = SeekScraper()
     soup = BeautifulSoup("<span>Posted 2d/1h ago</span>", "lxml")
 
-    posted_at = scraper._extract_posted_date(soup)
+    posted = scraper._extract_posted_date(soup)
 
-    assert posted_at == (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
+    assert posted.precision == "hour"
+    assert posted.date == "2026-10-18"
+
+
+def test_extract_posted_date_nz_uses_auckland_offset(frozen_now):
+    scraper = SeekScraper(country="NZ")
+    soup = BeautifulSoup("<span>Posted 25m ago</span>", "lxml")
+
+    assert scraper._extract_posted_date(soup).ts.endswith("+13:00")
+
+
+def test_extract_posted_date_without_posted_span_is_empty():
+    scraper = SeekScraper()
+    soup = BeautifulSoup("<span>Featured</span>", "lxml")
+
+    assert scraper._extract_posted_date(soup) == EMPTY
 
 
 def test_seek_scraper_defaults_to_au_base_url():

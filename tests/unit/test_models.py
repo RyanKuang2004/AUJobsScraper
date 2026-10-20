@@ -87,3 +87,16 @@ def test_job_posting_has_no_llm_fields():
     assert "seniority" not in d
     assert "core_languages" not in d
     assert "llm_extracted_at" not in d
+
+
+def test_job_posting_posted_time_fields_default_to_none():
+    job = JobPosting(job_title="Engineer", company="Acme", description="Build great software")
+    assert job.posted_at_ts is None and job.posted_at_precision is None
+
+
+def test_job_posting_rejects_unknown_precision():
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        JobPosting(job_title="Engineer", company="Acme", description="Build great software",
+                   posted_at_precision="week")

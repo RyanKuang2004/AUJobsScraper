@@ -6,6 +6,7 @@ from aujobsscraper.config import settings
 from aujobsscraper.models.job import JobPosting
 from aujobsscraper.models.location import Location
 from aujobsscraper.scrapers.base_scraper import BaseScraper
+from aujobsscraper.utils.posted_time import from_date
 from aujobsscraper.utils.salary_parser import SalaryParser
 from aujobsscraper.utils.scraper_utils import normalize_locations
 
@@ -117,7 +118,8 @@ class IndeedScraper(BaseScraper):
 
         locations = self._extract_locations(job_post.get("location"))
         salary = self._extract_salary(job_post)
-        posted_at = self._normalize_posted_date(job_post.get("date_posted"))
+        # jobspy already reduces Indeed's timestamp to a date, so day precision is the best available
+        posted = from_date(self._normalize_posted_date(job_post.get("date_posted")), self.country)
 
         return JobPosting(
             job_title=title,
@@ -127,7 +129,7 @@ class IndeedScraper(BaseScraper):
             source_urls=[source_url] if source_url else [],
             platforms=[self.platform],
             salary=salary,
-            posted_at=posted_at,
+            **posted.as_fields(),
         )
 
     async def _scrape_term_with_limit(self, term: str, semaphore: asyncio.Semaphore):

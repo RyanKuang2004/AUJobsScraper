@@ -9,11 +9,11 @@ from aujobsscraper.scrapers.base_scraper import BaseScraper
 from aujobsscraper.config import settings
 from aujobsscraper.utils.scraper_utils import (
     remove_html_tags,
-    calculate_posted_date,
     normalize_locations,
     normalize_salary
 )
 from aujobsscraper.models.job import JobPosting
+from aujobsscraper.utils.posted_time import EMPTY, PostedTime, from_relative
 
 
 class SeekScraper(BaseScraper):
@@ -107,7 +107,7 @@ class SeekScraper(BaseScraper):
                 source_url=job_url,
                 description=self._extract_description(soup),
                 salary=normalize_salary(self._extract_salary(soup)),
-                posted_at=self._extract_posted_date(soup),
+                **self._extract_posted_date(soup).as_fields(),
             )
             self._collect_job(job_posting)
 
@@ -137,10 +137,10 @@ class SeekScraper(BaseScraper):
         raw = str(elem) if elem else str(soup.find("body"))
         return remove_html_tags(raw)
 
-    def _extract_posted_date(self, soup):
+    def _extract_posted_date(self, soup) -> PostedTime:
         for elem in soup.find_all("span"):
             text = elem.get_text(strip=True)
             if re.search(r"^Posted\s+\S+\s+ago$", text, re.IGNORECASE):
-                return calculate_posted_date(text)
-        return None
+                return from_relative(text, self.country)
+        return EMPTY
 

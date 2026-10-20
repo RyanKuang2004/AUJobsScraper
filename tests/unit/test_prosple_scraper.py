@@ -364,3 +364,18 @@ async def test_prosple_scrape_yields_one_batch_per_page():
 
     assert len(batches) == 1
     assert len(batches[0]) == 1
+
+
+def test_extract_posted_date_date_only_is_day_precision():
+    scraper = ProspleScraper()
+
+    posted = scraper._extract_posted_date({"datePosted": "2026-10-19"})
+
+    assert posted.precision == "day"
+    assert posted.date == "2026-10-19"
+
+
+def test_extract_posted_date_missing_is_empty():
+    from aujobsscraper.utils.posted_time import EMPTY
+
+    assert ProspleScraper()._extract_posted_date({}) == EMPTY

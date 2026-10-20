@@ -303,3 +303,19 @@ def test_format_jobpost_maps_nz_location_to_region():
     assert posting is not None
     assert posting.locations[0].city == "Auckland"
     assert posting.locations[0].state == "Auckland"
+
+
+def test_format_jobpost_sets_day_precision_posted_time():
+    scraper = IndeedScraper()
+
+    posting = scraper.format_jobpost({
+        "title": "Data Analyst",
+        "company": "Acme",
+        "job_url": "https://au.indeed.com/viewjob?jk=456",
+        "description": "Analyse data and build dashboards for the operations team.",
+        "date_posted": "2026-10-19",
+    })
+
+    assert posting.posted_at == "2026-10-19"
+    assert posting.posted_at_precision == "day"
+    assert posting.posted_at_ts == "2026-10-19T00:00:00+11:00"

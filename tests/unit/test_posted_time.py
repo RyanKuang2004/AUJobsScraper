@@ -64,3 +64,12 @@ def test_from_date_accepts_date_and_string():
 def test_calculate_posted_date_still_returns_local_date(monkeypatch):
     monkeypatch.setattr(posted_time, "_utcnow", lambda: NOW)
     assert calculate_posted_date("Posted 2h ago") == "2026-10-20"
+
+
+def test_as_fields_maps_to_job_posting_kwargs():
+    p = PostedTime("2026-10-20", "2026-10-20T05:05:00+11:00", "minute")
+    assert p.as_fields() == {
+        "posted_at": "2026-10-20",
+        "posted_at_ts": "2026-10-20T05:05:00+11:00",
+        "posted_at_precision": "minute",
+    }
