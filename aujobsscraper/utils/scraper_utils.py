@@ -6,9 +6,10 @@ for common tasks like HTML parsing, text processing, and data extraction.
 """
 
 import re
-from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 from typing import Literal
+
+from . import posted_time
 
 # Import all constants from the constants module
 from .constants import (
@@ -203,37 +204,21 @@ def normalize_salary(raw_text: str):
     }
 
 
-def calculate_posted_date(text: str) -> str:
+def calculate_posted_date(text: str) -> str | None:
     """
     Calculate the posting date from relative time text.
-    
-    Parses text like "Posted 2d ago" and calculates the actual date.
-    Handles days (d), hours (h), and minutes (m) formats.
-    
+
+    Parses text like "Posted 2d ago" and returns the Melbourne-local date.
+    Kept for callers that only need the date; see posted_time.from_relative
+    for the timestamp and precision.
+
     Args:
         text: Relative time text (e.g., "Posted 2d ago", "Posted 30+d ago")
-        
-    Returns:
-        Date string in YYYY-MM-DD format
-    """
-    try:
-        # Clean text: "Posted 2d ago" -> "2d"
-        clean_text = text.replace("Posted", "").replace("ago", "").strip().lower()
-        
-        days_ago = 0
-        day_match = re.search(r"(\d+)\+?d", clean_text)
-        if day_match:
-            days_ago = int(day_match.group(1))
-        elif "h" in clean_text or "m" in clean_text:
-            # Hours or minutes ago = today
-            days_ago = 0
-            
-        posted_date = datetime.now() - timedelta(days=days_ago)
-        return posted_date.strftime("%Y-%m-%d")
-    except Exception:
-        # Default to today if parsing fails
-        return datetime.now().strftime("%Y-%m-%d")
 
+    Returns:
+        Date string in YYYY-MM-DD format, or None if the text can't be parsed
+    """
+    return posted_time.from_relative(text).date
 
 
 def normalize_locations(
